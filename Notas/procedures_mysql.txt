@@ -1,0 +1,72 @@
+PROCEDURES - É uma espécie de programa que irá executar certa ação recebendo parâmetros.
+  .Pontos de um Stored Procedure:
+  	..O nome da Stored Procedure deve ter apenas letras, números, $ e _.
+  	..Tamanho máximo de 64 caracteres.
+  	..Deve ser nome único.
+  	..É case senstive.
+  	
+  .Criar uma PROCEDURE:
+  	Botão direito em Stored Procedures -> Create Stored Procedures -> Preencher com as operações.
+  	
+  	Ex: CREATE PROCEDURE `show_number_alias` ()
+	    BEGIN
+	    select (1+0)-5 as RESULTADO;
+	    END
+	    
+	..Podemos usar funções na procedure:
+		CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_with_functions`()
+		BEGIN
+		select concat('Alô mundo!!!','...',(8+13)-5) as ITENS_COMBINADOS;
+		END
+		
+	..Podemos utilizar comentários nas procedures:
+		Comentário pode ser uma única linha, utilizando o -- ou utilizando /* */
+		
+		Ex:CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_with_comment`()
+		BEGIN
+		/* Vamos exibir itens combinados 
+		entre textos e números */
+		-- Usando a função CONCAT
+		select concat('Alô mundo!!!', 33+(10-20), ' Tchau!!!');
+		END
+  	
+  .Para chamar uma Stored Procedure, utilizamos a função call:
+  	call hello_world;
+  	
+  .Para alterar ou excluir uma Stored Procedure: 
+  	Botão direito na Procedure desejada -> Alter/Drop Stored Procedure;
+  	
+  .Podemos fazer o create, alter e drop por linha de comando:
+  	..Create - 
+  		USE `vendas_sucos`;
+  		DROP procedure IF EXISTS `hello_world_2`;
+
+		DELIMITER $$
+		USE `vendas_sucos`$$
+		CREATE PROCEDURE `hello_world_2` ()
+		BEGIN
+		select 'Alô mundo!!!' as RESULTADO;
+		END$$
+		
+		DELIMITER ;
+
+	..Alter - 
+		USE `vendas_sucos`;
+		DROP procedure IF EXISTS `hello_world_2`;
+
+		DELIMITER $$
+		USE `vendas_sucos`$$
+		CREATE PROCEDURE `hello_world_2`()
+		BEGIN
+		select 'Alô mundo, tudo bem??' as RESULTADO;
+		END$$
+
+		DELIMITER ;
+		
+	..Drop - 
+		USE `vendas_sucos`;
+  		DROP procedure IF EXISTS `hello_world_2`;
+  	
+  	Obs: O delimiter serve para modificar a separação de linha, para que o workbench não confunda o ; da criação da procedure com os ; das linhas de comandos do procedure.
+  	
+  

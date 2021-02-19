@@ -1,0 +1,452 @@
+Uma regra do SQL, para toda chave primária e chave estrangeira, o MySQL automaticamente cria o índice associado para facilitar a pesquisa em banco com muitos registros.
+Dessa forma para chave primária, toda vez que for colocar alguém novo na tabela, o banco de dados vai buscar na tabela para saber se o novo registro já existe.
+Enquanto que para chave estrangeira. quando for colocar um registro na tabela filho cujo campo tem relação com a tabela pai, só se coloca na tabela filho um campo existente na tabela pai. Assim, o banco de dados vai procurar na tabela pai se o registro existe, caso sim, pode colocar na tabela filho.
+	Obs: No banco de dados sucos_vendas, a tabela notas_fiscais tem 3 índices, onde 1 é a chave primária da tabela (PRIMARY) e as outras duas são de chaves estrangeiras (MATRICULA e CPF).
+	Obs: Campos com chave primária ficam marcados nas informações com um "PK" ao lado do seu tipo.
+	
+Para gerar um esquema visual do banco de dados desejado, devemos fazer - 
+	Database -> Reverse Engineer (Ctrl + R) -> Next (a conexão é a de sempre) -> ... -> Escolhe a base que quer usar -> Next -> ... -> Execute
+	
+Obs: Uma função interessanto pro alias é quandos se tem 2 campos com o mesmo nome de tabelas diferentes, então para facilitar na visualização, utilizamos o alias.
+	
+Obs: Condições de filtro onde utilizamos chave primária (where) são muito mais eficientes pois a pesquisa será feita a partir do índice.
+
+Obs: No MySQL usar letra minúscula ou maiúscula na string não interfere na pesquisa.
+
+Podemos usar AND e OR para condicionar melhor nossa consulta - 
+	select * from tabela_de_produtos where EMBALAGEM = 'Garrafa' or TAMANHO = '470 ml';
+	select * from tabela_de_produtos where EMBALAGEM = 'Garrafa' and TAMANHO = '470 ml';
+
+	Obs: Para inverter um resultado em MySQL podemos usar o NOT - 
+		select * from tabela_de_produtos where not(EMBALAGEM = 'Garrafa' or TAMANHO = '470 ml');
+		select * from tabela_de_produtos where EMBALAGEM = 'Garrafa' and not (TAMANHO = '470 ml');
+		select * from tabela_de_produtos where not(EMBALAGEM = 'Garrafa');
+		
+Podemos usar o IN para condicionar nosas consulta (contido) - 
+	select * from tabela_de_produtos where SABOR in ('Laranja', 'Manga'); (funciona igual a select * from tabela_de_produtos where SABOR = 'Laranja' or SABOR = 'Manga';)
+	
+	Obs: Podemos mesclar condições utilizando o IN - 
+		select * from tabela_de_clientes where CIDADE in ('Rio de Janeiro', 'São Paulo') and IDADE >= 20;
+		
+Podemos usar o LIKE para condicionar a consulta (procurar uma parte inserida no texto, o que vem antes e depois usamos o % para generalizar, equivalente ao * quando trabalhamos com arquivos) - 
+	like '%Soares%' (procura strings onde há uma substring Soares)
+	like 'Soares%' (procura strings que começam com Soares)
+	like '%Soares' (procura strings que terminam com Soares)
+	select * from tabela_de_produtos where SABOR like '%Maça%';
+	
+	Obs: Podemos associar o like com outras condições - 
+		select * from tabela_de_produtos where SABOR like '%Maça%' and EMBALAGEM = 'PET';
+		
+Comandos para alterar o que posso visualizar -
+	DISTINCT -> para retornar apenas linhas de valores diferentes
+		select distinct * from tabela_de_produtos;
+		select distinct EMBALAGEM, TAMANHO from tabela_de_produtos;
+		select distinct EMBALAGEM, TAMANHO, SABOR from tabela_de_produtos where SABOR = 'Laranja';
+		select distinct EMBALAGEM, TAMANHO, SABOR from tabela_de_produtos;
+		select distinct BAIRRO from tabela_de_clientes where CIDADE = 'Rio de Janeiro';
+		
+	LIMIT -> para retornar apenas a quantidade de registros desejada (sempre fica no final do comando)
+		select * from tabela_de_clientes limit 5;
+		
+		Obs: Para não pegar as linhas do inicio da tabela, podemos escolher a partir de qual linha pegar -
+			select * from tabela_de_clientes limit 2,3; (a partir da segunda linha, pega 3 registros)
+			
+		Obs: Ao selecionar a partir de qual linha pegar, o MySQL reconhece a primeira linha como 0.
+		
+	ORDER BY -> para retornar os registros de forma ordenada (seja crescente ou descrescente)
+		select * from tabela_de_produtos order by PRECO_DE_LISTA desc;
+		select * from tabela_de_produtos order by NOME_DO_PRODUTO;
+		select * from tabela_de_produtos order by EMBALAGEM, NOME_DO_PRODUTO;
+		select * from tabela_de_produtos order by EMBALAGEM desc, NOME_DO_PRODUTO asc;
+		
+		Obs: Podemos selecionar mais de um campo para ser a base de nossa ordenação
+		
+		Resposta atividade : Qual (ou quais) foi (foram) a(s) maior(es) venda(s) do produto “Linha Refrescante - 1 Litro - Morango/Limão”, em quantidade? (Obtenha este resultado usando 2 SQLs).
+			select CODIGO_DO_PRODUTO from tabela_de_produtos where NOME_DO_PRODUTO = 'Linha Refrescante - 1 Litro - Morango/Limão';
+			select QUANTIDADE from itens_notas_fiscais where CODIGO_DO_PRODUTO = '1101035' order by QUANTIDADE desc; (codigo obtido da primeira consulta)
+	
+	GROUP BY -> para juntar campos repetidos e se esses forem numéricos, podemos aplicar uma fórmula matemática
+		select ESTADO, avg(LIMITE_DE_CREDITO) as `MEDIA DE LIMITE` from tabela_de_clientes group by ESTADO;
+		select ESTADO, avg(LIMITE_DE_CREDITO) as `MEDIA DE LIMITE` from tabela_de_clientes group by ESTADO order by `MEDIA DE LIMITE` asc;
+		select EMBALAGEM, count(*) as CONTADOR from tabela_de_produtos group by EMBALAGEM;
+		
+		Obs: As operações que podemos aplicar são:
+			SUM: Soma
+			MAX: Máximo
+			MIN: Mínimo
+			AVG: Média
+			COUNT: Conta ocorrências
+	
+		Obs: Se omitirmos os campos de agregação, toda a tabela será agregada e não precisaremos usar o group by -
+			select sum(LIMITE_DE_CREDITO) as `SOMA TOTAL` from tabela_de_clientes;
+			select max(QUANTIDADE) as `Maior quantidade` from itens_notas_fiscais where CODIGO_DO_PRODUTO = '1101035';
+			select EMBALAGEM, max(PRECO_DE_LISTA) as MAIOR_PRECO, MIN(PRECO_DE_LISTA) as MENOR_PRECO from tabela_de_produtos group by EMBALAGEM ;
+			
+		Obs: Ao utilizarmos uma fórmula precisamos utilizar um alias para ser o nome do campo do resultado da operação.
+		
+		Obs: Podemos utilizar condicionadores ao utilizarmos GROUP BY - 
+			select BAIRRO, avg(LIMITE_DE_CREDITO) as LIMITE from tabela_de_clientes where CIDADE = 'Rio de Janeiro' group by BAIRRO;
+		
+		Obs: Podemos agrupar por mais de um campo - 
+			select ESTADO, BAIRRO, avg(LIMITE_DE_CREDITO) as LIMITE from tabela_de_clientes group by ESTADO, BAIRRO;
+			select ESTADO, BAIRRO, avg(LIMITE_DE_CREDITO) as LIMITE from tabela_de_clientes where CIDADE = 'Rio de Janeiro' group by ESTADO, BAIRRO;
+			select ESTADO, BAIRRO, avg(LIMITE_DE_CREDITO) as LIMITE from tabela_de_clientes where CIDADE = 'Rio de Janeiro' group by ESTADO, BAIRRO order by BAIRRO; (nesse comando grupando, ordenando e filtrando)
+			
+		Resposta atividade: Aproveitando o exercício do vídeo anterior quantos itens de venda existem com a maior quantidade do produto '1101035'? (Quantas vendas foram feitas do produto '1101035' em sua maior quantidade)
+			select max(QUANTIDADE) as `Maior quantidade` from itens_notas_fiscais where CODIGO_DO_PRODUTO = '1101035';
+			select count(*) from itens_notas_fiscais where CODIGO_DO_PRODUTO = '1101035' and QUANTIDADE = 99;
+	
+	HAVING -> condição para filtrar o resultado de uma agregação (por exemplo, visualizar apenas campos onde uma soma der maior que x)
+		select ESTADO, sum(LIMITE_DE_CREDITO) as SOMA_LIMITE from tabela_de_clientes group by ESTADO having SUM(LIMITE_DE_CREDITO) > 900000;
+		select EMBALAGEM, max(PRECO_DE_LISTA) as MAIOR_PRECO, MIN(PRECO_DE_LISTA) as MENOR_PRECO from tabela_de_produtos group by EMBALAGEM having SUM(PRECO_DE_LISTA) <= 80;
+		select EMBALAGEM, max(PRECO_DE_LISTA) as MAIOR_PRECO, MIN(PRECO_DE_LISTA) as MENOR_PRECO from tabela_de_produtos group by EMBALAGEM having SUM(PRECO_DE_LISTA) <= 80 and MAX(PRECO_DE_LISTA) >= 5;
+		
+		Obs: O WHERE não funciona no GROUP BY, pois quando a função WHERE acontece, a GROUP BY ainda não aconteceu 
+		
+		Resposta atividade: Quais foram os clientes que fizeram mais de 2000 compras em 2016?
+			select CPF, count(*) from notas_fiscais where year(DATA_VENDA) = 2016 group by CPF having count(*) > 2000;
+			
+	CASE -> testa um ou mais campos e dependendo do resultado, temos um ou outro valor
+		select NOME_DO_PRODUTO, PRECO_DE_LISTA, 
+		case 
+			when PRECO_DE_LISTA >= 12 then 'PRODUTO CARO'
+			when PRECO_DE_LISTA >= 7 and PRECO_DE_LISTA < 12 then 'PRODUTO EM CONTA'
+			else 'PRODUTO BARATO' 
+		end as STATUS_PRECO from tabela_de_produtos;
+		
+		SELECT EMBALAGEM,
+		CASE 
+		   WHEN PRECO_DE_LISTA >= 12 THEN 'PRODUTO CARO'
+		   WHEN PRECO_DE_LISTA >= 7 AND PRECO_DE_LISTA < 12 THEN 'PRODUTO EM CONTA'
+		   ELSE 'PRODUTO BARATO' 
+		END AS STATUS_PRECO, AVG(PRECO_DE_LISTA) AS PRECO_MEDIO
+		FROM tabela_de_produtos
+		WHERE sabor = 'Manga'
+		GROUP BY EMBALAGEM, 
+		CASE 
+		   WHEN PRECO_DE_LISTA >= 12 THEN 'PRODUTO CARO'
+		   WHEN PRECO_DE_LISTA >= 7 AND PRECO_DE_LISTA < 12 THEN 'PRODUTO EM CONTA'
+		   ELSE 'PRODUTO BARATO' 
+		END 
+		ORDER BY EMBALAGEM;
+		
+		Respota atividade: Veja o ano de nascimento dos clientes e classifique-os como: Nascidos antes de 1990 são velhos, nascidos entre 1990 e 1995 são jovens e nascidos depois de 1995 são crianças. Liste o nome do cliente e esta classificação.
+			select NOME, 
+			case
+				when year(DATA_DE_NASCIMENTO) < 1990 THEN 'Velho'
+				when year(DATA_DE_NASCIMENTO) >= 1990 and year(DATA_DE_NASCIMENTO) <= 1995 then 'Jovem'
+				else 'Criança'
+			end as FAIXA_ETARIA
+			from tabela_de_clientes;
+			
+Podemos utilizar o JOIN para unir uma ou mais tabelas através de campos em comuns, os tipos de JOINs são:
+	INNER JOIN - retorna somente quando existem chaves correspondentes
+	LEFT JOIN - retorna todos da tabela da esquerda e somente os correspondentes da direita
+	RIGHT JOIN - retorna todos da tabela da direita e somente os correspondentes da esquerda
+	FULL JOIN - retorna todos os registros de todas as tabelas
+	CROSS JOIN - retorna o produto cartesiano de todas as relações (todas as opções possíveis, não só as existentes)
+	
+	select * from tabela_de_vendedores A
+	inner join notas_fiscais B
+	on A.MATRICULA = B.MATRICULA;
+	
+	select A.MATRICULA, A.NOME, count(*) from
+	tabela_de_vendedores A
+	inner join notas_fiscais B
+	on A.MATRICULA = B.MATRICULA
+	group by A.MATRICULA, A.NOME;
+	(retorna a quantidade de vezes que o vendedor teve uma nota fiscal impressa com seu nome)
+	
+	Obs: Caso retorne um campo sem correspondência, o valor é NULL.
+	
+	Obs: Os campos a serem igualados não precisam ter o mesmo nome, mas seus registros precisam ter o mesmo conteudo.
+	
+	Obs: É necessário dar um alias para as tabelas, no caso do exemplo A e B.
+	
+	Obs: É possível utilizar o WHERE no lugar do ON, mas não se é utilizado dessa forma atualmente.
+	
+	Resposta atividade: Obtenha o faturamento anual da empresa. Leve em consideração que o valor financeiro das vendas consiste em multiplicar a quantidade pelo preço.
+		select year(DATA_VENDA), sum(QUANTIDADE * PRECO) as FATURAMENTO 
+		from notas_fiscais NF inner join itens_notas_fiscais INF
+		on NF.NUMERO = INF.NUMERO 
+		group by year(DATA_VENDA);
+		
+		Obs: Para conseguir o faturamento total - 
+			select sum(PRECO * QUANTIDADE) as FATURAMENTO from itens_notas_fiscais A
+			inner join notas_fiscais B on A.NUMERO = B.NUMERO;
+			
+	select distinct A.CPF, A.NOME, B.CPF from tabela_de_clientes A
+	left join notas_fiscais B on A.CPF = B.CPF
+	where B.CPF is null and year(B.DATA_VENDA) = 2015;
+	
+	Obs; Se sabemos de antemão que um campo só existe em uma tabela, não precisamos usar o prefixo.
+	
+	Obs: Podemos usar o próprio nome da tabela como prefixo - 
+		select * from tabela_de_vendedores inner join tabela_de_clientes 
+		on tabela_de_vendedores.BAIRRO = tabela_de_clientes.BAIRRO;
+		
+Para unir duas consultas, utilizamos o UNION - 
+	select distinct BAIRRO from tabela_de_vendedores union select distinct BAIRRO from tabela_de_clientes;
+	
+	Obs: UNION ALL, mostrar todos os campos, mesmo se forem repetidos.
+	
+	Obs: Tem que ser selecionado o mesmo número de campos em ambas as tabelas de tipos iguais.
+	
+	Obs: O FULL JOIN não é suportado pelo MySQL, porém podemos simular ele com UNION - 
+		SELECT tabela_de_vendedores.BAIRRO,
+		tabela_de_vendedores.NOME, DE_FERIAS,
+		tabela_de_clientes.BAIRRO,
+		tabela_de_clientes.NOME  FROM tabela_de_vendedores LEFT JOIN tabela_de_clientes
+		ON tabela_de_vendedores.BAIRRO = tabela_de_clientes.BAIRRO
+		UNION
+		SELECT tabela_de_vendedores.BAIRRO,
+		tabela_de_vendedores.NOME, DE_FERIAS,
+		tabela_de_clientes.BAIRRO,
+		tabela_de_clientes.NOME  FROM tabela_de_vendedores RIGHT JOIN tabela_de_clientes
+		ON tabela_de_vendedores.BAIRRO = tabela_de_clientes.BAIRRO;
+		
+Subconsulta são consultas dentro de consultas - 
+	SELECT * FROM tabela_de_clientes WHERE BAIRRO 
+	IN ('Tijuca','Jardins','Copacabana','Santo Amaro');
+
+	SELECT * FROM tabela_de_clientes WHERE BAIRRO 
+	IN (SELECT DISTINCT BAIRRO FROM tabela_de_vendedores);
+
+	SELECT X.EMBALAGEM, X.PRECO_MAXIMO FROM 
+	(SELECT EMBALAGEM, MAX(PRECO_DE_LISTA) AS PRECO_MAXIMO FROM tabela_de_produtos
+	GROUP BY EMBALAGEM) X WHERE X.PRECO_MAXIMO >= 10;
+	
+	Resultado atividade:
+		SELECT CPF, COUNT(*) FROM notas_fiscais
+		  WHERE YEAR(DATA_VENDA) = 2016
+	 	  GROUP BY CPF
+	  	  HAVING COUNT(*) > 2000
+	 
+View é uma tabela lógica, que é o resultado de uma consulta e pode ser usado de0pois em outras consultas - 
+	select X.EMBALAGEM, X.MAIOR_PRECO from vw_maximo_embalagens X where X.MAIOR_PRECO >= 10; (APÓS CRIAR A VIEW)
+	
+	Obs: Podemos fazer join entre tabelas e views - 
+		SELECT A.NOME_DO_PRODUTO, A.EMBALAGEM, A.PRECO_DE_LISTA, X.MAIOR_PRECO,
+		((A.PRECO_DE_LISTA / X.MAIOR_PRECO) -1) * 100 AS PERCENTUAL
+		FROM tabela_de_produtos A INNER JOIN vw_maiores_embalagens X
+		ON A.EMBALAGEM = X.EMBALAGEM;
+	
+	Obs: A visão é um select, então toda vez que referenciamos ela, o banco de dados resolve o select, logo a visão tem um custo.
+	
+	Obs: Botão direito em view e criar uma nova view.
+	
+	Obs: Podemos criar uma visão de outra visão.
+	
+FUNÇÕES(fator que normalmente é diferente de um banco pra outro, logo passar de mysql pra oracle, por exemplo, precisa de um estudo para adaptação das funções), os 3 principais tipos de funções são:
+	Funções escalares -> manipulam textos
+	Funções de data -> manipulam data
+	Funções matemáticas -> fazem operações matemáticas entre campos floats ou inteiros
+	
+	Obs: Utilizar o w3schools: SQL -> SQL References -> MySQL Functions
+	
+	Funções escalares - 
+		select concat('Olá', ' ', 'TUDO BEM', '?') as resultado;
+		select substring('OLÁ, TUDO BEM?, 6, 4) as resultado; (na posição 6, 4 letras)
+		select concat(NOME, '(', CPF, ')') as RESULTADO from tabela_de_clientes;
+		select NOME, concat(ENDERECO_1, ',', ENDERECO_2, ',' , BAIRRO, ',' , CIDADE, ',' ,ESTADO) as ENDERECO from tabela_de_clientes;
+		
+		Obs: LTRIM E RTRIM, tiram espaços da esquerda e direita respectivamente, enquanto que o TRIM, tira do inicio e fim.
+		
+		Obs: INSTR, saber se uma string está dentro de outra (se é substring).
+		
+	Funções de data - 
+		select curdate();
+		select current_time();
+		select current_timestamp();
+		select month(current_timestamp());
+		select monthname(current_timestamp());
+		select datediff(current_timestamp(), '2019-01-01') as resultado;
+		select current_timestamp() as dia_hoje, date_sub(current_timestamp(), interval 5 day) as resultado;
+		select distinct DATA_VENDA, DAYNAME(DATA_VENDA) as DIA, MONTHNAME(DATA_VENDA) as MES, YEAR(DATA_VENDA) as ANO from notas_fiscais;
+		
+		Obs: ADDDATE serve pra adicionar um intervalo de tempo na data existente. ADDDATE(date, INTERVAL value addunit)
+		
+		Obs: ADDTIME serve pra adicionar um tempo em horas, minutos ou segundos.
+		
+		Obs: CURDATE serve pra retornar a hora e data atual do computador.
+		
+		Obs: CURRENT_TIME serve pra retornar a hora atual do computador.
+		
+		Obs: DATEDIFF serve pra retornar a diferença entre duas datas.
+		
+		Obs: DAYNAME serve pra retonar o dia atual da semana.
+		
+		Resposta atividade: Crie uma consulta que mostre o nome e a idade atual dos clientes - 
+			SELECT NOME, TIMESTAMPDIFF (YEAR, DATA_DE_NASCIMENTO, CURDATE()) AS IDADE FROM  tabela_de_clientes;
+			
+			select NOME, year(current_date()) - year(DATA_DE_NASCIMENTO) as IDADE from tabela_de_clientes; (impreciso)
+
+			Obs: TIMESTAMPDIFF retorna a diferença entre duas datas com o adicional que podemos escolher o formato do resultado, desde microsegundos até ano. (data inicial no primeiro campo e data final do segundo) - 
+				SELECT '2020-07-02' as DATA_FINAL, '2019-04-13' as DATA_INICIAL, TIMESTAMPDIFF (month, '2019-04-13', '2020-07-02') AS DIFF;
+	
+	Funções matemáticas - 
+		select (23+((25-2)/2)*45) as RESULTADO;
+		select CEILING(12.33333333232323) as RESULTADO;
+		select ROUND(12.33333333232323) as RESULTADO;
+		select FLOOR(12.77777777232323) as RESULTADO;
+		select RAND() as RESULTADO;
+		select NUMERO, QUANTIDADE, PRECO, round(QUANTIDADE * PRECO, 3) as FATURAMENTO from ITENS_NOTAS_FISCAIS;
+		
+		Obs: ABS serve para tornar positivo um valor.
+		
+		Obs: Funções de arredondamento como o ROUND(arredondamento correto, usa um parametro que é o número de casas decimais), CEILING(mostra o próximo valor inteiro) ou FLOOR(arredonda pra baixo sempre).
+		
+		Obs: RAND gera um número aleatório.
+		
+		Resposta atividade: Na tabela de notas fiscais temos o valor do imposto. Já na tabela de itens temos a quantidade e o faturamento. Calcule o valor do imposto pago no ano de 2016 arredondando para o menor inteiro - 
+			select year(A.DATA_VENDA) as ANO, floor(sum(A.IMPOSTO * (QUANTIDADE * PRECO))) as IMPOSTO_TOTAL from notas_fiscais A inner join itens_notas_fiscais B on A.NUMERO = B.NUMERO where year(A.DATA_VENDA) = 2016 group by ANO; (Caio)
+			
+			SELECT YEAR(DATA_VENDA), FLOOR(SUM(IMPOSTO * (QUANTIDADE * PRECO))) 
+			FROM notas_fiscais NF
+			INNER JOIN itens_notas_fiscais INF ON NF.NUMERO = INF.NUMERO
+			WHERE YEAR(DATA_VENDA) = 2016
+			GROUP BY YEAR(DATA_VENDA) (Professor)
+			
+Processo de conversão de dados são importantes, pois cada campo tem seu tipo e esse não pode mudar, mas ainda sim podemos precisar fazer manipulações em algumas informações e dependendo do tipo do dado pode ser que não consiga aplicar alguma função - 
+	" https://dev.mysql.com/doc/refman/5.7/en/date-and-time-functions.html#function_date-format "
+	
+	select concat('O dia de hoje é : ', DATE_FORMAT(CURRENT_TIMESTAMP(), '%Y')) as RESULTADO; (para utilizar os %letra no date_format, consultar tabela!)
+	select concat('O dia de hoje é : ', DATE_FORMAT(CURRENT_TIMESTAMP(), '%m/%y')) as RESULTADO;
+	select concat('O dia de hoje é : ', DATE_FORMAT(CURRENT_TIMESTAMP(), '%d/%c/%Y')) as RESULTADO;
+	select concat('O dia de hoje é : ', DATE_FORMAT(CURRENT_TIMESTAMP(), '%W, %d/%m/%Y - %U')) as RESULTADO;	
+	
+	Obs: CONCAT faz uma conversão implicita pra data em string no formato padrão - 
+		select concat('O dia de hoje é : ', CURRENT_TIMESTAMP()) as RESULTADO;	
+		
+	select convert(23.3, char) as RESULTADO; (converte 23.3 para string) -> select substring(convert(23.3, char),1,1) as RESULTADO; 
+	
+	Obs: CONVERT faz conversão explicita para o tipo selecionado.
+	
+	Resposta atividade:Queremos construir um SQL cujo resultado seja, para cada cliente: 
+			    “O cliente João da Silva faturou 120000 no ano de 2016”.
+			    Somente para o ano de 2016 -
+		select concat('O cliente ', TC.NOME, ' faturou ', round(sum(INF.QUANTIDADE * INF.PRECO),2) , ' no ano de ', 		year(DATA_VENDA)) as RESULTADO
+		from tabela_de_clientes TC inner join notas_fiscais NF on TC.CPF = NF.CPF
+		inner join itens_notas_fiscais INF on NF.NUMERO = INF.NUMERO 
+		where year(NF.DATA_VENDA) = 2016 group by TC.NOME, year(DATA_VENDA);
+		
+		SELECT CONCAT('O cliente:', ' ',nome, ' ', 'faturou', ' ', SUM((quantidade * preco)), ' ', 'no ano de', ' ', YEAR(data_venda)) AS RELATORIO
+		FROM tabela_de_clientes tc,
+		     notas_fiscais nf,
+		     itens_notas_fiscais inf
+		WHERE tc.cpf = nf.cpf
+		AND   nf.numero = inf.numero
+		AND   YEAR(data_venda) = '2016'
+		GROUP BY nome
+		ORDER BY nome;
+
+		SELECT CONCAT('O cliente ', TC.NOME, ' faturou ', 
+		CAST(SUM(INF.QUANTIDADE * INF.preco) AS char (20))
+		 , ' no ano ', CAST(YEAR(NF.DATA_VENDA) AS char (20))) AS SENTENCA FROM notas_fiscais NF
+		INNER JOIN itens_notas_fiscais INF ON NF.NUMERO = INF.NUMERO
+		INNER JOIN tabela_de_clientes TC ON NF.CPF = TC.CPF
+		WHERE YEAR(DATA_VENDA) = 2016
+		GROUP BY TC.NOME, YEAR(DATA_VENDA)
+		
+RELATÓRIOS - 
+	Resposta atividade: Conferir se uma venda é válida ou não (se o volume de compra que é mensal, ultrapassa a quantidade do mês) - 
+		select TC.CPF, TC.NOME ,extract(year_month from NF.DATA_VENDA) as ANO_MES, TC.VOLUME_DE_COMPRA, sum(INF.QUANTIDADE) as QUANTIDADE_MENSAL, 
+		case when sum(INF.QUANTIDADE) > TC.VOLUME_DE_COMPRA then 'Inválido'
+		else 'Válido' end as STATUS_VENDA 
+		from tabela_de_clientes TC inner join notas_fiscais NF on TC.CPF = NF.CPF
+		inner join itens_notas_fiscais INF on NF.NUMERO = INF.NUMERO
+		group by TC.CPF, ANO_MES;
+		
+		SELECT X.CPF, X.NOME, X.MES_ANO, X.QUANTIDADE_VENDAS, X.QUANTIDADE_LIMITE,
+		CASE WHEN (X.QUANTIDADE_LIMITE - X.QUANTIDADE_VENDAS) < 0 THEN 'INVÁLIDA'
+		ELSE 'VÁLIDA' END AS STATUS_VENDA
+		FROM (
+		SELECT NF.CPF, TC.NOME, DATE_FORMAT(NF.DATA_VENDA, '%Y-%m') AS MES_ANO
+		, SUM(INF.QUANTIDADE) AS QUANTIDADE_VENDAS 
+		, MAX(TC.VOLUME_DE_COMPRA) AS QUANTIDADE_LIMITE FROM NOTAS_FISCAIS NF
+		INNER JOIN ITENS_NOTAS_FISCAIS INF
+		ON NF.NUMERO = INF.NUMERO
+		INNER JOIN TABELA_DE_CLIENTES TC 
+		ON TC.CPF = NF.CPF
+		GROUP BY NF.CPF, TC.NOME, DATE_FORMAT(NF.DATA_VENDA, '%Y-%m')) X;
+	
+	Complemente este relatório listando somente os que tiveram vendas inválidas e calculando a diferença entre o limite de venda máximo e o realizado, em percentuais - 
+		select X.CPF, X.NOME, X.ANO_MES, X.STATUS_VENDA, round((1-(X.VOLUME_DE_COMPRA/X.QUANTIDADE_MENSAL))*100,2) as 			DIFERENCA_PORCENTAGEM from
+		(select TC.CPF, TC.NOME ,extract(year_month from NF.DATA_VENDA) as ANO_MES, TC.VOLUME_DE_COMPRA, sum(INF.QUANTIDADE) as 			QUANTIDADE_MENSAL, 
+		case when sum(INF.QUANTIDADE) > TC.VOLUME_DE_COMPRA then 'Inválido'
+		else 'Válido' end as STATUS_VENDA 
+		from tabela_de_clientes TC inner join notas_fiscais NF on TC.CPF = NF.CPF
+		inner join itens_notas_fiscais INF on NF.NUMERO = INF.NUMERO
+		group by TC.CPF, ANO_MES) X
+		where X.STATUS_VENDA = 'Inválido';
+
+
+		SELECT X.CPF, X.NOME, X.MES_ANO, X.QUANTIDADE_VENDAS, X.QUANTIDADE_LIMITE,
+		CASE WHEN (X.QUANTIDADE_LIMITE - X.QUANTIDADE_VENDAS) < 0 THEN 'INVÁLIDA'
+		ELSE 'VÁLIDA' END AS STATUS_VENDA, (1 - (X.QUANTIDADE_LIMITE/X.QUANTIDADE_VENDAS)) * 100 AS PERCENTUAL
+		FROM (SELECT NF.CPF, TC.NOME, DATE_FORMAT(NF.DATA_VENDA, '%Y-%m') AS MES_ANO
+		, SUM(INF.QUANTIDADE) AS QUANTIDADE_VENDAS 
+		, MAX(TC.VOLUME_DE_COMPRA) AS QUANTIDADE_LIMITE FROM notas_fiscais NF
+		INNER JOIN itens_notas_fiscais INF
+		ON NF.NUMERO = INF.NUMERO
+		INNER JOIN tabela_de_clientes TC 
+		ON TC.CPF = NF.CPF
+		GROUP BY NF.CPF, TC.NOME, DATE_FORMAT(NF.DATA_VENDA, '%Y-%m')) X (OBS: USAR O "AS X" para caso use duas subconsultas não dar erro)
+		WHERE (X.QUANTIDADE_LIMITE - X.QUANTIDADE_VENDAS) < 0;
+
+	Obs: Quando é feito um plano cartesiano a quantidade de registros pende pra tabela que tem mais registros.
+	
+	Obs: Quando aos juntar tabelas temos um campo que se repete para o mesmo tipo de registro (limite pro mesmo cpf), nesse caso podemos usar o max no cpf.
+	
+	Resposta atividade: Um acompanhamento sobre as vendas no ano de 2016 por sabores, eles querem montar esse relatório, uma coluna com os sabores, depois o ano que eu estou analisando, que é 2016, e eu quero olhar isso de forma ordenada do maior para o menor, onde eu tenho as quantidade em litros vendidas no ano todo, e no final um percentual de participação - 
+		select TBSABOR.SABOR, TBSABOR.ANO, TBSABOR.QUANTIDADE_SABOR, round((TBSABOR.QUANTIDADE_SABOR/TBANO.QUANTIDADE_ANO)*100,2) as PARTICIPACAO from 
+			(select SABOR, year(DATA_VENDA) as ANO, sum(QUANTIDADE) as QUANTIDADE_SABOR from tabela_de_produtos TB 
+			inner join itens_notas_fiscais INF on TB.CODIGO_DO_PRODUTO = INF.CODIGO_DO_PRODUTO
+			inner join notas_fiscais NF on INF.NUMERO = NF.NUMERO
+			where year(DATA_VENDA) = 2016
+			group by SABOR, year(DATA_VENDA)) TBSABOR
+		inner join 
+			(select year(DATA_VENDA) as ANO, sum(QUANTIDADE) as QUANTIDADE_ANO from tabela_de_produtos TB 
+			inner join itens_notas_fiscais INF on TB.CODIGO_DO_PRODUTO = INF.CODIGO_DO_PRODUTO
+			inner join notas_fiscais NF on INF.NUMERO = NF.NUMERO
+			where year(DATA_VENDA) = 2016
+			group by year(DATA_VENDA)) TBANO
+		on TBSABOR.ANO = TBANO.ANO
+		order by TBSABOR.QUANTIDADE_SABOR desc;
+		
+		SELECT VENDA_SABOR.SABOR, VENDA_SABOR.ANO, VENDA_SABOR.QUANTIDADE,
+		ROUND((VENDA_SABOR.QUANTIDADE/VENDA_TOTAL.QUANTIDADE) * 100, 2) AS PARTICIPACAO FROM 
+			(SELECT TP.SABOR, YEAR(NF.DATA_VENDA) AS ANO, SUM(INF.QUANTIDADE) AS QUANTIDADE FROM 
+			TABELA_DE_PRODUTOS TP 
+			INNER JOIN ITENS_NOTAS_FISCAIS INF ON TP.CODIGO_DO_PRODUTO = INF.CODIGO_DO_PRODUTO
+			INNER JOIN NOTAS_FISCAIS NF ON NF.NUMERO = INF.NUMERO
+			WHERE YEAR(NF.DATA_VENDA) = 2016
+			GROUP BY TP.SABOR, YEAR(NF.DATA_VENDA)) AS VENDA_SABOR
+		INNER JOIN 
+			(SELECT YEAR(NF.DATA_VENDA) AS ANO, SUM(INF.QUANTIDADE) AS QUANTIDADE FROM 
+			TABELA_DE_PRODUTOS TP 
+			INNER JOIN ITENS_NOTAS_FISCAIS INF ON TP.CODIGO_DO_PRODUTO = INF.CODIGO_DO_PRODUTO
+			INNER JOIN NOTAS_FISCAIS NF ON NF.NUMERO = INF.NUMERO
+			WHERE YEAR(NF.DATA_VENDA) = 2016
+			GROUP BY YEAR(NF.DATA_VENDA)) AS VENDA_TOTAL
+		ON VENDA_SABOR.ANO = VENDA_TOTAL.ANO
+		ORDER BY VENDA_SABOR.QUANTIDADE DESC
+		
+	Modifique o relatório mas agora para ver o ranking das vendas por tamanho - 
+		select TBSABOR.TAMANHO, TBSABOR.ANO, TBSABOR.QUANTIDADE_SABOR, round((TBSABOR.QUANTIDADE_SABOR/			TBANO.QUANTIDADE_ANO)*100,2) as PARTICIPACAO from 
+			(select TAMANHO, year(DATA_VENDA) as ANO, sum(QUANTIDADE) as QUANTIDADE_SABOR from tabela_de_produtos TB 
+			inner join itens_notas_fiscais INF on TB.CODIGO_DO_PRODUTO = INF.CODIGO_DO_PRODUTO
+			inner join notas_fiscais NF on INF.NUMERO = NF.NUMERO
+			where year(DATA_VENDA) = 2016
+			group by TAMANHO, year(DATA_VENDA)) TBSABOR
+		inner join 
+			(select year(DATA_VENDA) as ANO, sum(QUANTIDADE) as QUANTIDADE_ANO from tabela_de_produtos TB 
+			inner join itens_notas_fiscais INF on TB.CODIGO_DO_PRODUTO = INF.CODIGO_DO_PRODUTO
+			inner join notas_fiscais NF on INF.NUMERO = NF.NUMERO
+			where year(DATA_VENDA) = 2016
+			group by year(DATA_VENDA)) TBANO
+		on TBSABOR.ANO = TBANO.ANO
+		order by TBSABOR.QUANTIDADE_SABOR desc;
+		
+		
+

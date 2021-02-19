@@ -1,0 +1,227 @@
+	Por não possuir uma estruturação a linguagem SQL (ifs, whens, fors, etc), os bancos de dados relacionais criaram suas próprias linguagens, que fogem um pouco do padrão ANSI.
+	O padrão ANSI, que aumenta a longevidade do sistema (porque as novas versões sempre vão estar adaptadas a esse padrão), possui 3 grandes grupos de comando, que são:
+	DDLs (linguagem de definição de dados) - é a parte que permite a manipulação das estruturas do banco de dados, como criar bancos, tabelas, índices, apagar ou alterar esses, etc. Ou seja, todos os comandos que mexem com a estrutura do banco de dados relacional.
+
+	DMLs (linguagem de manipulação de dados) - é o grupo de comandos que tem como objetivo gerenciar os dados, comandos como incluir, alterar, excluir informações que estão dentro das estruturas do banco (como tabelas), etc. É a parte responsável também por fazer consultas, tirar informações das estruturas e exibir para os usuários.
+	 
+	DCLs (linguagem de controle de dados) - é o grupo de comandos que possibilita a administração do banco de dados mas não de sua estrutura, como na administração do controle de acesso, gerenciamento de usuário, gerenciar o que cada usuário pode ver ou não. Além desses, também gerenciar o banco a nível de estrutura, como vai ser sua política de crescimento, o armazenamento em disco, onde vai ser tal armazenamento. Também administrar os processos, saber quantos desses estão sendo executados, além do controle de logs, etc.
+
+	Dentro da maior entidade, que é o próprio banco de dados, temos diversas entidades, onde a principal é a tabela. Uma tabela precisa ter definido a quantidade de campos (o campo é a coluna)  e o tipo de cada campo. E então, cada linha vai ser um registro. Uma tabela terá o número de campos limitados, enquanto que pode ter infinitos registros.
+
+	Chave primária é uma coluna onde seus valores não podem se repetir. Chave composta não pode repetir a combinação de campos. 
+
+	Chave estrangeira é um campo que faz a ligação entre tabelas para, por exemplo, conferir um dado. Ex: Cpf em uma tabela de vendas precisar estar na tabela de clientes.
+
+	Índice serve para buscar elementos mais facilmente na tabela, invés de pesquisar linha por linha.
+
+	Um grupo de tabelas podemos chamar de esquema, em outras palavras, um esquema pode ser um tópico para agrupar as tabelas.
+
+	Uma visão(view) é um agrupamento de tabelas através de chaves estrangeiras, onde ao fazer uma consulta iremos conseguir acessar informações de mais de 1 tabela. Dessa forma, a view vai funcionar como uma tabela, porém com uma consulta construída por detrás, funcionando como uma regra de negócio para juntar as informações requeridas.
+
+	Ao fazer uma consulta de mais de uma tabela é necessário fazer um join para juntar as tabelas e então podemos utilizar de filtros para melhorar tal pesquisa, ainda por cima desse resultado podemos fazer uma view.
+
+	Os bancos de dados possuem internamente "procedures", que são comandos(ex: ifs, whiles, etc) nas linguagens proprietárias criadas pelos construtores dos bandos de dados, que permitem que façamos algum tipo de lógica estruturadas, através de tais comandos.(o mysql possui diversas funções prontas, porém podemos crias novas)
+
+	Triggers são alertas criados no banco de dados para que sejamos avisados caso algum fato especifico ocorra em nossa tabela. Tal aviso pode ser uma função, um procedura ou mesmo um único comando SQL, que seja executado quando a condição do trigger for satisfeita.
+
+	Obs: No Mysql DATABASE é igual a SCHEMA.
+		    Mysql não é key sensitive (pode escrever em maiúsculo ou minúsculo) 
+		    Existe uma boa prática que os comandos são escritos em maiúsculo.
+
+	Character set é a tabela de caractere que iremos utilizar no banco de dados, caso a linguagem seja português, por exemplo, não pode ser tabela ASCII, pois a mesma não tem ç ou letras com acento.
+	Collate especifica o padrão do conjunto de caracteres.
+	Encryption define se o banco de dados vai ser criptografado ou não.
+
+	CREATE SCHEMA `sucos_2` DEFAULT CHARACTER SET utf8 ; //código usado ao criar um database pelo menu
+
+	DROP DATABASE ´nome´; //comando para apagar um database (usar com cuidado)
+
+	DBA = Administrador do banco
+
+	Acessando do terminal:
+		mysql -h (host) localhost (servidor) -u (usuario) root (meu usuario) -p (uso da senha)
+		show databases;
+		use database; (selecionar o database = double click)
+
+	Ponto flutuante - o número decimal é arredondado caso tenha um número de casas decimais maior que o permitido no banco (float ou double).
+	Decimal fixo - número fixo de dígitos e casas decimais (até 65 dígitos) (decimal ou numeric).
+
+	SIGNED OU UNSIGNED - atributo para definir se o número possui sinal ou não.
+	ZEROFILL - atributo para preencher com zero os espaços para completar o tamanho do número.
+	AUTO_INCREMENT - atributo para criar uma sequência de números (começando de 1 ou 0) e pode escolher de quanto em quanto irá crescer.
+	Obs: Erro de OUT OF RANGE irá ocorrer quando o valor estourar o limite definido.
+
+	DATE - grava o dia (1000-01-01 -> 9999-12-31)
+	DATETIME - grava o dia e a hora (1000-01-01 00:00:00 -> 9999-12-31 23:59:59)
+	TIMESTAMP - grava o dia, a hora e o fuso horário (1970-01-01 00:00:01 UTC até 2038-01-19 UTC)
+	TIME - grava tempo em horas (-838:59:59 -> 838:59:59)
+	YEAR- grava o ano (1901 -> 2155) (pode ser 2 ou 4 dígitos)
+
+	CHAR - cadeia de caracteres com valor fixo (0 -> 255) (caso a string seja menor que o tamanho, é preenchido no começo da palavra com espaços vazios) (costuma gastar mais memória)
+	VARCHAR - cadeia de caracteres com valor variado (0 -> 255)
+
+	BINARY - cadeia de caracteres em binário fixo (0 -> 255) (caso a string seja menor que o tamanho, é preenchido no começo da palavra com espaços vazios)
+	VARBINARY -  cadeia de caracteres em binário variado (0 -> 255) 
+
+	BLOB - binário longo. (tem variantes)
+	TEXT - texto longo. (tem variantes)
+
+	ENUM - permite armazenar uma lista pré-definida de valores.
+
+	SET e COLLATE - que tipo de conjunto de caracteres serão suportados (definido melhor no começo deste arquivo).
+
+	SPACIAL (com suas variantes) - tipo para definir localização. (ex: point - um ponto no mapa)
+
+	Comando para criar tabela - create table;
+		As colunas a serem criadas ficam entre parênteses - 
+			create table tbCliente(
+			CPF varchar(11), 
+			NOME varchar(100), 
+			RUA varchar(150), 
+			BAIRRO varchar(50),
+			CIDADE varchar(50),
+			ESTADO varchar(50),
+			CEP varchar(8),
+			`DATA DE NASCIMENTO` date,
+			IDADE smallint, 
+			SEXO enum('masculino', 'feminino', 'nao especificado'), 
+			`LIMITE DE CREDITO` float,
+			`VOLUME MINIMO` float,
+			`PRIMEIRA COMPRA` bit(1)
+			);
+
+		Obs: Se preocupar, por exemplo, com o formato do que um valor está sendo armazenado, pois normalmente o ideal é fazer a formatação na hora de exibir tais valores.
+		
+		Resposta da tabela do exercício - 
+			create table TABELA_DE_VENDEDORES(
+			MATRICULA varchar(5),
+			NOME varchar(100),
+			PERCENTUAL_COMISSAO float
+			);
+			
+		Obs: Para padronizar meu banco de dados, usei o comando - 
+			rename table TABELA_DE_VENDEDORES to tbVendedores;
+		
+		Obs: Ao colocar NULL após o tipo da coluna define que o campo aceita valor nulo - 
+			MATRICULA varchar(5) NULL,
+		
+		Obs: Para apagar ruma tabela usamos o -
+			drop table;
+			
+	Comando para inserir informação na tabela (apos selecionar o banco de dados) - 
+		insert into tbProdutos (
+		CODIGO, NOME, EMBALAGEM, TAMANHO, SABOR, `PRECO DE LISTA`
+		)
+		values (
+		'1040107', 'Light', 'Lata', 350, 'Melancia', 4.56
+		);
+		
+		Obs: Para conferir se o produto foi adicionado a lista, usar o seguinte comando - 
+			select * from tbProdutos;
+			
+		Obs: String precisa estar entre aspas simples '' para poder ser inserida
+			
+		Resposta da tabela do exercício - 
+			insert into tbVendedores(
+			MATRICULA, NOME, PERCENTUAL_COMISSAO
+			)
+			values(
+			'00233', 'João Geraldo da Fonseca', 10.0
+			);
+			ou
+			INSERT INTO TABELA_DE_VENDEDORES
+			(MATRICULA, NOME, PERCENTUAL_COMISSAO)
+			VALUES
+			('00233', 'João Geraldo da Fonseca', 0.10);
+			
+		Obs: Para pesquisar um produto especifico se usa o comando - 
+			select * from tbProdutos where CODIGO = '1088126';
+			
+	Comando para modificar o valor de um campo na tabela - 
+		update tbProdutos set EMBALAGEM = 'PET', TAMANHO = 1000 where CODIGO = '1088126';
+		
+		Obs: De preferência, o valor do where tem que ser uma chave primária para não haver conflito entre mais de um produto.
+			
+	Comando para apagar um determinado elemento da tabela - 
+		delete from tbProduto where CODIGO = '1088126';
+		
+		Obs: Usar delete from tbProduto; apaga todos os elementos da tabela
+		
+	Comando para alterar a propriedade de uma tabela e adicionar uma chave primária - 
+		alter table tbProdutos add primary key (CODIGO);
+		
+	Campo lógico - bit 1 ou 0
+
+	Comando para adicionar uma nova coluna na tabela - 
+		alter table tbCliente add column (DATA_NASCIMENTO date);
+		
+		Obs: Comando para remover uma coluna na tabela - 
+			alter table tbCliente drop column `DATA DE NASCIMENTO`;
+		
+	Adicionando um elemento na tabela sendo uma das colunas data - 
+		INSERT INTO tbCliente (
+		CPF, NOME, RUA, BAIRRO, CIDADE, ESTADO, CEP, IDADE, SEXO, `LIMITE DE CREDITO`, `VOLUME MINIMO`, `PRIMEIRA COMPRA`, `DATA DE NASCIMENTO`
+		)
+		VALUES (
+		'00388934505','João da Silva','Rua projetada A', 'VILA ROMAN', 'CARATINGA', 'AMAZONAS','2222222',30,'masculino', 10000.00, 2000,
+		0, '1989-10-05'
+		);
+
+	A representação universal de data no sql é 'aaaa-mm-dd'
+
+	Obs: Para usar uma string vazia é ''
+
+	Obs: Para padronizar meus bancos utilizei os comandos -
+		rename table tbProdutoProf to tbProdutosProf;
+		rename table tbCliente to tbClientes;
+		rename table tbClienteProf to tbClientesProf;
+		
+	VISUALIZAÇÃO -
+	Comando para selecionar para visualização apenas os campos desejados - 
+		select PRODUTO, SABOR, PRECO_LISTA from tbProdutosProf;
+		
+		Obs: Para limitar quantidade de registros, usamos o limit - 
+			select PRODUTO, SABOR, PRECO_LISTA from tbProdutosProf limit 5;
+			
+		Obs: Podemos modificar o nome da coluna apenas para visualização criando alias associadas aos campos- 
+			select PRODUTO as CODIGO_PRODUTO, SABOR as SABOR_PRODUTO, PRECO_LISTA as PRECO_PRODUTO from tbProdutosProf;
+		
+		Obs: As colunas a serem visualizadas não precisam estar na ordem da tabela
+		
+	Comando para selecionar para visualização apenas os registros desejados - 
+		select * from tbProdutosProf where EMBALAGEM = 'PET';
+
+	Comando para modificar um campo de registros desejados - 
+		update tbProdutos set SABOR = 'Cítricos' where SABOR = 'Limão';
+		
+	Comando para slecionar para visualização registros desejados utilizando maior, menor ou diferente - 
+		select * from tbClientesProf where IDADE > 20;
+		
+		Obs: Outros modificadores são:
+			<, <=, >=, <> (todos exceto, ou seja diferente) 
+		
+		Obs: Os modificadores citados acima funcionam para strings, pois o Mysql trabalha lexicograficamente
+		
+		Obs: Campos do tipo float não se pode usar o os modificadores de igual e diferente, pois por ser um ponto flutuante, não é possível achar exatamente onde ele tá. (maior e menor funcionam normalmente) Dessa forma, caso queira utilizar vírgula e igualdade, o ideal é usar o tipo DECIMAL.
+		Comando para achar igual com o tipo float - 
+			select * from tbProdutoProf where PRECO_LISTA between 16.007 and 16.009
+		
+		Obs: Os modificadores citados podem ser usados para datas - 
+			select * from tbClienteProf where DATA_NASCIMENTO >= '1995-01-13';
+			
+			Obs: Existem funções que ajudam na pesquisa da data, como por exemplo o de ano e mês - 
+				select * from tbClienteProf where year(DATA_NASCIMENTO) <= 1995
+				select * from tbClienteProf where month(DATA_NASCIMENTO) <> 10;
+
+	Comando para usar filtros compostos (and) - 
+		select * from tbProdutoProf where PRECO_LISTA >= 16.007 and PRECO_LISTA <= 16.009 (funciona igual a select * from tbProdutoProf where PRECO_LISTA between 16.007 and 16.009)
+		select * from tbClientesProf where IDADE >= 18 AND IDADE <= 22 AND SEXO = 'M';
+		select * from tbVendedores where year(DATA_ADMISSAO) < 2016 and DE_FERIAS = 1;
+		
+		Obs: Podemos usar também o ou (or) para a visualização - 
+			select * from tbClientesProf where CIDADE = 'Rio de Janeiro' or BAIRRO = 'Jardins';
+			select * from tbClientesProf where (IDADE >= 18 AND IDADE <= 22 AND SEXO = 'M') or (CIDADE = 'Rio de Janeiro' or BAIRRO = 'Jardins');
+
+			
+	Obs: Todas as condições de filtro podemos usar no where e no delete
+

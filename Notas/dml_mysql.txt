@@ -1,0 +1,241 @@
+Obs: Banco de dados é considerado uma unidade básica, enquanto que tabela é considerada uma entidade básica.
+
+PROJETAR BANCO DE DADOS - 
+  .Para projetar um banco de dados devemos nos atentar a alguns requisitos como:
+  	Entendimento das regras de negócio;
+  	Efetuar atividades de entrevistas e reuniões;
+  	Desenho de modelo mais fiel a realidade.
+  	
+  .Criar um diagrama de relacionamento: 
+  	Para a criação de um diagrama de relacionamentos de um banco de dados utilizamos substantivos (entidades) ligados por verbos (Ex: contém, realiza, possui), colocando entre as ligações o número que são as conexões (Ex: um vendedor pode ter muitas vendas). 
+  	Cada entidade vai ter suas características (Ex: nome, idade).
+  	
+  .Transformar o diagrama de entidades em banco de dados:
+  	Transformar cada entidade em uma ou mais tabelas físicas no banco de dados.
+  	Cada relação da modelagem será um relacionamento nas tabelas do banco de dados.
+  	
+  .Construir o banco de dados:
+  	Utilizamos ferramentas CASE (Computer-Aided Software Engineening) (Ex: Star UML, Astah, ERWin), que são ferramentas que ao criarmos o diagrama com as relações, a ferramenta gera os códigos de criação.
+  	
+NA PRÁTICA -  
+  .Para criar o banco de dados - create database if not exists vendas_sucos default character set utf8;
+  .Para criar a tabela com chave primária - create table nome_tabela (
+  						nome_campo tipo_campo nulo_ou_nao (caso o campo possa ser nulo ou não),
+  						... ,
+  						nome_campo_n tipo_campo_n nulo_ou_nao_n (chaves primarias são not null),
+  						PRIMARY KEY (campo_pk_1, campo_pk_n)
+  						)
+  	Ex: create table VENDEDORES (
+		MATRICULA varchar(5) not null,
+		NOME varchar(100) null,
+		BAIRRO varchar(50) null,
+		COMISSAO float null,
+		DATA_ADMISSAO date null,
+		FERIAS bit(1) null,
+		primary key(MATRICULA)
+	  );
+	  
+	 Ex: CREATE TABLE `vendas_sucos`.`VENDAS` (
+	 `NUMERO` VARCHAR(5) NOT NULL,
+	 `DATA` DATE NULL,
+	 `CPF` VARCHAR(11) NULL,
+	 `MATRICULA` VARCHAR(5) NULL,
+	 `IMPOSTO` FLOAT NULL,
+	 PRIMARY KEY (`NUMERO`),
+	 INDEX `CPF_idx` (`CPF` ASC) VISIBLE,
+	 INDEX `MATRICULA_idx` (`MATRICULA` ASC) VISIBLE,
+	 CONSTRAINT `CPF`
+	 FOREIGN KEY (`CPF`)
+	 REFERENCES `vendas_sucos`.`CLIENTES` (`CPF`)
+	 ON DELETE NO ACTION
+	 ON UPDATE NO ACTION,
+	 CONSTRAINT `MATRICULA`
+	 FOREIGN KEY (`MATRICULA`)
+	 REFERENCES `vendas_sucos`.`VENDEDORES` (`MATRICULA`)
+	 ON DELETE NO ACTION
+	 ON UPDATE NO ACTION);
+
+	Obs: As relações que ligam as tabelas são chamadas de CONSTRAINT.
+	
+  .Para criar as relações das chaves estrangeiras - 
+  	alter table NOTAS add constraint notas_fk_1 foreign key (CPF) references CLIENTES (CPF);
+  	ALTER TABLE itens_notas ADD CONSTRAINT FK_PRODUTOS
+	FOREIGN KEY (CODIGO)
+	REFERENCES PRODUTOS (CODIGO);
+	
+	Obs: Caso um dos campos não sejam uma chave primária colocar esse antes do references.
+
+  .Para inserir registros em uma tabela - 
+  	insert into nome_tabela (campos separados por virgula)
+  	values (valores a serem incluidos), ... , (valores a serem incluidos)
+  	
+  	Ex: insert into PRODUTOS values ('1040108', 'Light - 350 ml - Laranja', 'Laranja', '350 ml', 'Lata', 4.15), 
+  	    ('1040109', 'Light - 350 ml - Uva', 'Uva', '350 ml', 'Lata', 4.80);
+  	    
+  	    insert into PRODUTOS (CODIGO, DESCRITOR, SABOR, TAMANHO, EMBALAGEM, PRECO_LISTA) 
+  	    values ('1040110', 'Light - 350 ml - Açai', 'Açai', '350 ml', 'Lata', 5.30);
+  	    
+	    insert into CLIENTES 
+	    (CPF, NOME, ENDERECO, BAIRRO, CIDADE, ESTADO, CEP, DATA_NASCIMENTO, IDADE, SEXO, LIMITE_CREDITO, VOLUME_COMPRA, PRIMEIRA_COMPRA)
+	    values 
+	    ('1471156710', 'Érica Carvalho', 'R. Iriquitia', 'Jardins', 'São Paulo', 'SP', '80012212', '1990-09-01', 27, 'F', 170000, 24500, 0), 
+	    ('19290992743', 'Fernando Cavalcante', 'R. Dois de Fevereiro', 'Água Santa', 'Rio de Janeiro', 'RJ', '22000000', '2000-02-12', 18, 'M', 100000, 20000, 1), 
+	    ('2600586709', 'César Teixeira', 'Rua Conde de Bonfim', 'Tijuca', 'Rio de Janeiro', 'RJ', '22020001', '2000-03-12', 18, 'M', 120000, 22000, 0);
+	    	
+  	Obs: Insert sem a lista de campos só pode ser usado caso os valores respeite a ordem de campos da tabela.
+  	
+  	..Podemos importar para um banco registros de outro banco -
+  		Em outras palavras, iremos inserir dados de uma consulta em uma tabela. 
+  		Iremos então selecionar os campos utilizando alias para que os nomes sejam iguais a do banco destino e usamos um where para ter certeza de que não iremos ter produtos duplicados.
+  		
+  		select CODIGO_DO_PRODUTO as CODIGO, NOME_DO_PRODUTO as DESCRITO, EMBALAGEM, TAMANHO, SABOR, PRECO_DE_LISTA as PRECO_LISTA
+		from sucos_vendas.tabela_de_produtos
+		where CODIGO_DO_PRODUTO not in (select CODIGO from PRODUTOS);
+		
+		Após termos selecionado os campos iguais podemos dar um insert, respeitando a ordem dos campos, logo cuidado ao deixar os campos implícitos - 
+			insert into PRODUTOS (CODIGO, DESCRITOR, EMBALAGEM, TAMANHO, SABOR, PRECO_LISTA)
+			select CODIGO_DO_PRODUTO as CODIGO, NOME_DO_PRODUTO as DESCRITO, EMBALAGEM, TAMANHO, SABOR, PRECO_DE_LISTA as PRECO_LISTA
+			from sucos_vendas.tabela_de_produtos
+			where CODIGO_DO_PRODUTO not in (select CODIGO from PRODUTOS);
+  		
+  			insert into CLIENTES
+			select CPF, NOME, ENDERECO_1 as ENDERECO, BAIRRO, CIDADE, ESTADO, CEP, DATA_DE_NASCIMENTO as DATA_NASCIMENTO, 				IDADE, SEXO, LIMITE_DE_CREDITO as LIMITE_CREDITO, VOLUME_DE_COMPRA as VOLUME_COMPRA, PRIMEIRA_COMPRA
+			from sucos_vendas.tabela_de_clientes
+			where CPF not in (select CPF from CLIENTES);
+			
+  		Obs: Podemos também visualizar a tabela de um banco estando em outro banco - 
+  			use vendas_sucos;
+			select * from sucos_vendas.tabela_de_produtos;
+			
+  .Podemos importar registros de um arquivo externo - 
+  	Botão direito em cima da tabela que vai receber os dados -> Table Data Import Wizard -> Ajustar os campos da e do arquivo, atentar se houver problema com o enconding (de preferência utf8).
+  	
+  	Obs: Opção truncate na importação é para apagar todos os dados da tabela antes de importar.
+  	
+  	Obs: Ao utilizarmos a hora como 00:00:00 quer dizer que estamos utilizando uma hora neutra.
+  	
+  	
+Após o banco criado, podemos alterar ou excluir os dados da tabela - 
+  .Para alterar um dado da tabela, fazemos - 
+  	update nome_tabela set nome_campo1 = valor_campo1, ... , nome_campon = valor_campon where condição;
+  	
+  	Ex: update PRODUTOS set PRECO_LISTA = 5 where CODIGO = 1000889;
+  	    update PRODUTOS set DESCRITOR = 'Sabor da Montanha - 1 Litro - Uva', TAMANHO = '1 Litro', EMBALAGEM = 'PET' where CODIGO = '1000889';
+	    update PRODUTOS set PRECO_LISTA = PRECO_LISTA * 1.10 where SABOR = 'Maracujá';
+	    
+  .Para importar valores de registros iguais porém de tabelas diferentes usamos - 
+  	update VENDEDORES A inner join sucos_vendas.tabela_de_vendedores B on A.MATRICULA = substring(B.MATRICULA,3,3)
+	set A.FERIAS = B.DE_FERIAS;
+	update CLIENTES C inner join VENDEDORES V on C.BAIRRO = V.BAIRRO 
+	set C.VOLUME_COMPRA = C.VOLUME_COMPRA * 1.30;
+	
+	Obs: Caso os campos possuam valores iguais porém expressados diferentes (Ex: 00235 e 235), podemos utilizar substring - 
+		select * from VENDEDORES A inner join sucos_vendas.tabela_de_vendedores B on A.MATRICULA = substring(B.MATRICULA,3,3);
+		
+	Obs: Para selecionar os clientes que estão em bairros que tem vendedores - 
+		select C.CPF, C.VOLUME_COMPRA, C.BAIRRO from CLIENTES C inner join VENDEDORES V on C.BAIRRO = V.BAIRRO;
+	
+  .Para deletar registros com parte de um nome, exemplo, utilizando substring - 
+  	delete from PRODUTOS where TAMANHO = '1 Litro'and substring(DESCRITOR,1,15) = 'Sabor dos Alpes';
+	
+  .Atividade: Desafio: Vamos excluir as notas fiscais (Apenas o cabeçalho) cujos clientes tenham menos que 18 anos -
+  	DELETE A FROM NOTAS A INNER JOIN CLIENTES B ON A.CPF = B.CPF WHERE B.IDADE <= 18;
+  	
+	Obs: Segundo a documentação do MySQL, não é permitido excluir de uma tabela e selecionar a mesma tabela em uma subconsulta, por este motivo o erro é retornado no momento que você está tentando realizar o delete.
+	
+	Obs: Ao usarmos um join no delete, precisamos identificar de qual tabela iremos apagar.
+	
+  .Podemos gerar comandos como de excluir ao - 
+  	Botão direito em cima da tabela -> Send to SQL Editor -> Escolher ação.
+  	
+  Obs: Podemos deletar ou alterar todos os registros de uma tabela ao não usar o where -
+  	update produtos2 set preco_lista = 8;
+  	delete from produtos2;
+  	
+  Obs: Ao deletar tabelas com chaves estrangeiras primeiro devemos deletar a quem ela se refere.
+  
+TRANSAÇÕES NO MYSQL - Transação é uma unidade lógica de processamento que tem por objetivo manter a integridade e consistência dos dados.
+  .Comandos:
+  	START TRANSACTION - Para iniciar uma transação. Cria um ponto de estado no banco de dados.
+  	COMMIT - Para subir para o banco as modificações feitas. Confirma todas as operações entre o START TRANSACTION e o COMMIT.
+  	ROLLBACK - Para desfazer as operações feitas. Tudo que foi feito entre o START TRANSACTION e o ROLLBACK será ignorado.
+  
+  .Ex: 
+  	START TRANSACTION;
+  	UPDATE VENDEDORES SET COMISSAO = COMISSAO * 1.15;
+  	ROLLBACK;
+  		
+  	Obs: Serve tanto para update, quanto para insert, quanto para delete.
+  	
+  Obs: Podemos usar ROLLBACKs seguidos num mesmo script, mesmo que não haja iniciado nova transação. Mais o comando se torna inútil porque nada acontece.
+  
+CAMPO DE AUTO INCREMENTO - Cria uma sequência numérica de inteiros em um campo.
+  .Configurar um campo de auto incremento na criação de uma tabela - 
+  	CREATE TABLE TAB_IDENTITY (ID INT AUTO_INCREMENT, DESCRITOR VARCHAR(20), PRIMARY KEY(ID)); (o campo será o ID)
+  	
+  .Para inserir um registro podemos ou não referenciar ao campo de auto incremento - 
+  	INSERT INTO TAB_IDENTITY (DESCRITOR) VALUES ('CLIENTE1');
+	INSERT INTO TAB_IDENTITY (ID, DESCRITOR) VALUES (NULL, 'CLIENTE2');
+	INSERT INTO TAB_IDENTITY (ID, DESCRITOR) VALUES (100, 'CLIENTE2');
+	
+	Obs: Ao deletarmos um registro não interrompemos a sequência do contador -
+		DELETE FROM TAB_IDENTITY WHERE ID = 2;
+		
+	Obs: Ao forçar um valor para o campo de auto incremento a sequência será re-atualizada - 
+		INSERT INTO TAB_IDENTITY (ID, DESCRITOR) VALUES (100, 'CLIENTE5');
+
+PADRÔES EM CAMPOS - Podemos definir padrões para caso o campo não seja atribuido um valor, ele seja preenchido com um valor default.
+  .CREATE TABLE TAB_PADRAO // Os campos ENDERECO, CIDADE e DATA_CRIACAO vão ter valores default
+  (ID INT AUTO_INCREMENT,
+  DESCRITOR VARCHAR(20),
+  ENDERECO VARCHAR(100) NULL,
+  CIDADE VARCHAR(50) DEFAULT 'Rio de Janeiro',
+  DATA_CRIACAO TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),
+  PRIMARY KEY(ID));
+  
+  Ex: INSERT INTO TAB_PADRAO (DESCRITOR) VALUES ('CLIENTE Y'); //Irá ser preenchido automaticamente o ENDERECO, CIDADE e DATA_CRIACAO.
+  
+TRIGGERS - É uma regra que é disparada no momento em que uma tabela sofre uma modificação nos seus dados, ou seja, uma inclusão, alteração ou exclusão.
+  .Criação de um Trigger - 
+  	O seguinte TRIGGER serve para cada vez que for inserido um novo registro na tabela ITENS_NOTAS, seja recalculado o faturamento, apaga o antigo registro e adiciona um novo com o valor atualizado na tabela auxiliar que irá sempre ter o faturamento consolidado por data da venda. CREATE TABLE TAB_FATURAMENTO (DATA_VENDA DATE NULL, TOTAL_VENDA FLOAT);
+  	DELIMITER // 
+		CREATE TRIGGER TG_CALCULA_FATURAMENTO_INSERT AFTER INSERT ON ITENS_NOTAS
+		FOR EACH ROW BEGIN
+  		  DELETE FROM TAB_FATURAMENTO;
+  
+  		  INSERT INTO TAB_FATURAMENTO
+	  	  SELECT A.DATA, SUM(B.QUANTIDADE * B.PRECO) AS TOTAL_VENDA FROM
+	  	  NOTAS A INNER JOIN ITENS_NOTAS B
+	  	  ON A.NUMERO = B.NUMERO
+	  	  GROUP BY A.DATA;
+	END//
+	
+	Obs: O DELIMITER serve para poder fazer mais de uma operação em um mesmo trigger, caso contrário o comando pararia no primeiro ;	
+	
+  .Nesse caso é necessário um Trigger para quando houver um update ou exclusão na tabela ITENS_NOTAS - 
+  	DELIMITER //
+		CREATE TRIGGER TG_CALCULA_FATURAMENTO_UPDATE AFTER UPDATE ON ITENS_NOTAS
+		FOR EACH ROW BEGIN
+		  DELETE FROM TAB_FATURAMENTO;
+
+		  INSERT INTO TAB_FATURAMENTO	
+  		  SELECT A.DATA, SUM(B.QUANTIDADE * B.PRECO) AS TOTAL_VENDA FROM
+		  NOTAS A INNER JOIN ITENS_NOTAS B
+ 		  ON A.NUMERO = B.NUMERO
+ 		  GROUP BY A.DATA;
+	END//
+
+	DELIMITER //
+		CREATE TRIGGER TG_CALCULA_FATURAMENTO_DELETE AFTER DELETE ON ITENS_NOTAS
+		FOR EACH ROW BEGIN
+		  DELETE FROM TAB_FATURAMENTO;
+
+		  INSERT INTO TAB_FATURAMENTO
+ 		  SELECT A.DATA, SUM(B.QUANTIDADE * B.PRECO) AS TOTAL_VENDA FROM
+ 		  NOTAS A INNER JOIN ITENS_NOTAS B
+ 		  ON A.NUMERO = B.NUMERO
+ 		  GROUP BY A.DATA;
+	END//
+	
+
+	
