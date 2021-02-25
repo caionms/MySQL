@@ -1,0 +1,43 @@
+select TC.CPF, TC.NOME ,extract(year_month from NF.DATA_VENDA) as ANO_MES, TC.VOLUME_DE_COMPRA, sum(INF.QUANTIDADE) as QUANTIDADE_MENSAL, 
+case when sum(INF.QUANTIDADE) > TC.VOLUME_DE_COMPRA then 'Inválido'
+else 'Válido' end as STATUS_VENDA 
+from tabela_de_clientes TC inner join notas_fiscais NF on TC.CPF = NF.CPF
+inner join itens_notas_fiscais INF on NF.NUMERO = INF.NUMERO
+group by TC.CPF, ANO_MES;
+
+select X.CPF, X.NOME, X.ANO_MES, X.STATUS_VENDA, round((1-(X.VOLUME_DE_COMPRA/X.QUANTIDADE_MENSAL))*100,2) as DIFERENCA_PORCENTAGEM from
+(select TC.CPF, TC.NOME ,extract(year_month from NF.DATA_VENDA) as ANO_MES, TC.VOLUME_DE_COMPRA, sum(INF.QUANTIDADE) as QUANTIDADE_MENSAL, 
+case when sum(INF.QUANTIDADE) > TC.VOLUME_DE_COMPRA then 'Inválido'
+else 'Válido' end as STATUS_VENDA 
+from tabela_de_clientes TC inner join notas_fiscais NF on TC.CPF = NF.CPF
+inner join itens_notas_fiscais INF on NF.NUMERO = INF.NUMERO
+group by TC.CPF, ANO_MES) X
+where X.STATUS_VENDA = 'Inválido';
+
+SELECT X.CPF, X.NOME, X.MES_ANO, X.QUANTIDADE_VENDAS, X.QUANTIDADE_LIMITE,
+CASE WHEN (X.QUANTIDADE_LIMITE - X.QUANTIDADE_VENDAS) < 0 THEN 'INVÁLIDA'
+ELSE 'VÁLIDA' END AS STATUS_VENDA, (1 - (X.QUANTIDADE_LIMITE/X.QUANTIDADE_VENDAS)) * 100 AS PERCENTUAL
+FROM (SELECT NF.CPF, TC.NOME, DATE_FORMAT(NF.DATA_VENDA, '%Y-%m') AS MES_ANO
+, SUM(INF.QUANTIDADE) AS QUANTIDADE_VENDAS 
+, MAX(TC.VOLUME_DE_COMPRA) AS QUANTIDADE_LIMITE FROM notas_fiscais NF
+INNER JOIN itens_notas_fiscais INF
+ON NF.NUMERO = INF.NUMERO
+INNER JOIN tabela_de_clientes TC 
+ON TC.CPF = NF.CPF
+GROUP BY NF.CPF, TC.NOME, DATE_FORMAT(NF.DATA_VENDA, '%Y-%m')) as X
+WHERE (X.QUANTIDADE_LIMITE - X.QUANTIDADE_VENDAS) < 0;
+
+select TBSABOR.SABOR, TBSABOR.ANO, TBSABOR.QUANTIDADE_SABOR, round((TBSABOR.QUANTIDADE_SABOR/TBANO.QUANTIDADE_ANO)*100,2) as PARTICIPACAO from 
+(select SABOR, year(DATA_VENDA) as ANO, sum(QUANTIDADE) as QUANTIDADE_SABOR from tabela_de_produtos TB 
+inner join itens_notas_fiscais INF on TB.CODIGO_DO_PRODUTO = INF.CODIGO_DO_PRODUTO
+inner join notas_fiscais NF on INF.NUMERO = NF.NUMERO
+where year(DATA_VENDA) = 2016
+group by SABOR, year(DATA_VENDA)) TBSABOR
+inner join 
+(select year(DATA_VENDA) as ANO, sum(QUANTIDADE) as QUANTIDADE_ANO from tabela_de_produtos TB 
+inner join itens_notas_fiscais INF on TB.CODIGO_DO_PRODUTO = INF.CODIGO_DO_PRODUTO
+inner join notas_fiscais NF on INF.NUMERO = NF.NUMERO
+where year(DATA_VENDA) = 2016
+group by year(DATA_VENDA)) TBANO
+on TBSABOR.ANO = TBANO.ANO
+order by TBSABOR.QUANTIDADE_SABOR desc;

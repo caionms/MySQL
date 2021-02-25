@@ -1,0 +1,5 @@
+PONTOS A SE LEMBRAR SEMPRE - 
+
+.Para alterar um valor de um campo em uma tabela não se usa alter table, mas sim UPDATE.
+
+.Para tratar um erro - declare exit handler for 1062 / BEGIN / ... / END
