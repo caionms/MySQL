@@ -281,10 +281,10 @@ PROCEDURES - É uma espécie de programa que irá executar certa ação recebend
 		  declare vFaturamentoInicial float;
 		  declare vFaturamentoFinal float;
 		  declare vVariacao float;
-		  SELECT SUM(B.QUANTIDADE * B.PRECO) into vFaturamentoInicial FROM //calculo do faturamento inicial
+		  SELECT SUM(B.QUANTIDADE * B.PRECO) into vFaturamentoInicial FROM --calculo do faturamento inicial
 		  notas_fiscais A INNER JOIN itens_notas_fiscais B
 		  ON A.NUMERO = B.NUMERO
-		  WHERE A.DATA_VENDA = vDataInicial; //calculo do faturamento inicial
+		  WHERE A.DATA_VENDA = vDataInicial; --calculo do faturamento inicial
 		  SELECT SUM(B.QUANTIDADE * B.PRECO) into vFaturamentoFinal FROM 
 		  notas_fiscais A INNER JOIN itens_notas_fiscais B
 		  ON A.NUMERO = B.NUMERO
@@ -300,3 +300,152 @@ PROCEDURES - É uma espécie de programa que irá executar certa ação recebend
   		  select vResultado as `Situação faturamento`, vVariacao as `Variação`;
 		END
 		
+  .Utilizando o CASE:
+  	case seletor when seletor_valor_! then acao_1 when seletor_valor_2 then acao_2 ... else acao_n end case;
+  	
+  	CREATE DEFINER=`root`@`localhost` PROCEDURE `acha_tipo_sabor`(vProduto varchar(15))
+	BEGIN
+	  declare vSabor varchar(20);
+	  select SABOR into vSabor from tabela_de_produtos where CODIGO_DO_PRODUTO = vProduto;
+	  case vSabor
+	    when 'Lima/Limão' then select vSabor as SABOR, 'Cítrico' as TIPO;
+	    when 'Laranja' then select vSabor as SABOR, 'Cítrico' as TIPO;
+	    when 'Morango/Limão' then select vSabor as SABOR, 'Cítrico' as TIPO;
+	    when 'Uva' then select vSabor as SABOR, 'Neutro' as TIPO;
+	    when 'Morango' then select vSabor as SABOR, 'Neutro' as TIPO;
+	    else select vSabor as SABOR, 'Ácido' as TIPO;
+	  end case;
+	END
+	
+	..Lidando com o erro CASE NOT FOUND sem o else:
+		-- (Caso entre em um case existente abre duas janelas, uma do tipo e uma de mensagem NULL)
+		CREATE DEFINER=`root`@`localhost` PROCEDURE `acha_tipo_sabor_erro`(vProduto varchar(15))
+		BEGIN
+		  declare vSabor varchar(20);
+		  declare msgError varchar(40);
+		  declare continue handler for 1339 set msgError = 'Case incompleto!';
+		  select SABOR into vSabor from tabela_de_produtos where CODIGO_DO_PRODUTO = vProduto;
+		  case vSabor
+		    when 'Lima/Limão' then select vSabor as SABOR, 'Cítrico' as TIPO;
+		    when 'Laranja' then select vSabor as SABOR, 'Cítrico' as TIPO;
+		    when 'Morango/Limão' then select vSabor as SABOR, 'Cítrico' as TIPO;
+		    when 'Uva' then select vSabor as SABOR, 'Neutro' as TIPO;
+		    when 'Morango' then select vSabor as SABOR, 'Neutro' as TIPO;
+		  end case;
+		  select msgError as ERRO;
+		END
+		--
+		CREATE DEFINER=`root`@`localhost` PROCEDURE `acha_tipo_sabor_erro`(vProduto varchar(15))
+		BEGIN
+		  declare vSabor varchar(20);
+		  declare msgError varchar(40);
+		  declare continue handler for 1339
+		  BEGIN
+		    set msgError = 'Case incompleto!';
+		    select msgError as ERRO;
+		  end;
+		  select SABOR into vSabor from tabela_de_produtos where CODIGO_DO_PRODUTO = vProduto;
+		  case vSabor (**)
+		    when 'Lima/Limão' then select vSabor as SABOR, 'Cítrico' as TIPO;
+		    when 'Laranja' then select vSabor as SABOR, 'Cítrico' as TIPO;
+		    when 'Morango/Limão' then select vSabor as SABOR, 'Cítrico' as TIPO;
+		    when 'Uva' then select vSabor as SABOR, 'Neutro' as TIPO;
+		    when 'Morango' then select vSabor as SABOR, 'Neutro' as TIPO;
+		  end case;
+		END
+		-- (Caso entre em um case existente não vai abrir uma janela com mensagem NULL)
+		
+	..Usando o CASE condicional:
+		CREATE DEFINER=`root`@`localhost` PROCEDURE `acha_status_preco_case`(vProduto varchar(30))
+		BEGIN
+		  declare vPreco float;
+		  declare vResultado varchar(50);
+		  select PRECO_DE_LISTA into vPreco from tabela_de_produtos where CODIGO_DO_PRODUTO = vProduto;
+		  case (*)
+		    when vPreco >= 12.0 then set vResultado = 'Produto caro';
+		    when vPreco < 12.00 and vPreco >= 7.00 then set vResultado = 'Produto em conta';
+		    else set vResultado = 'Produto barato';
+		  end case;
+		  select vPreco as `Preço`, vResultado as `Status do produto`;
+		END
+		
+		Obs: Usar o case com condicional no lugar do if é um pouco mais eficiente, pois no if/elseif, todos os testes são testados até encontrar a a confição certa ou entrar no else e ai rodar ele roda a operação da condição, enquanto que no case, ele tem previamente definida a operação e ao entrar nos cases, ele vai diretamente pra a opção a ser selecionada.
+		
+		Obs: No CASE condicional declaramos apenas CASE (*), pois a variável a ser testada já está no when, enquanto que no CASE normal (**), pois iremos testar a variável para os casos do when.
+		
+		Exercício: 
+			CREATE DEFINER=`root`@`localhost` PROCEDURE `Comparativo_Vendas_Case_Cond`(vDataInicial date, vDataFinal date)
+			BEGIN
+			  declare vFaturamentoInicial float;
+			  declare vFaturamentoFinal float;
+			  declare vVariacao float;
+			  SELECT SUM(B.QUANTIDADE * B.PRECO) into vFaturamentoInicial FROM 
+			  notas_fiscais A INNER JOIN itens_notas_fiscais B
+			  ON A.NUMERO = B.NUMERO
+			  WHERE A.DATA_VENDA = vDataInicial;
+			  SELECT SUM(B.QUANTIDADE * B.PRECO) into vFaturamentoFinal FROM 
+			  notas_fiscais A INNER JOIN itens_notas_fiscais B
+			  ON A.NUMERO = B.NUMERO
+			  WHERE A.DATA_VENDA = vDataFinal;
+			  set vVariacao = (((vFaturamentoFinal / vFaturamentoInicial)-1)*100);
+			  case
+			    when vVariacao > 10 then select vVariacao as `Variação`, 'Verde' as Estado;
+			    when vVariacao <= 10 and vVariacao >= -10 then select vVariacao as `Variação`, 'Amarelo' as Estado;
+			    else select vVariacao as `Variação`, 'Vermelho' as Estado;
+			  end case;
+			END
+  
+  .Controle de fluxo com WHILE:
+  	while condicao do operacao; end while;
+  	
+  	CREATE DEFINER=`root`@`localhost` PROCEDURE `looping_while`(vNumeroInicial int, vNumeroFinal int)
+	BEGIN
+	  declare vContador int;
+	  delete from tab_looping;
+	  set vContador = vNumeroInicial;
+	  while vContador <= vNumeroFinal do
+	    insert into tab_looping (ID) values (vContador);
+	    set vContador = vContador + 1;
+	  end while;
+	  select * from tab_looping;
+	END
+	
+	Exercício: 
+		-- Imprime a quantidade total de notas, para imprimir diariamente basta colocar 'select count(*) from notas_fiscais where DATA_VENDA = vDataAtual;' dentro do while.
+		CREATE DEFINER=`root`@`localhost` PROCEDURE `Soma_Dias_Notas`(vDataInicial date, vDataFinal date)
+		BEGIN
+		  declare vDataAtual date;
+		  declare vQtdNotas int;
+		  declare vNotasDia int;
+		  set vQtdNotas = 0;
+		  set vDataAtual = vDataInicial;
+		  while vDataAtual <= vDataFinal do
+		    select count(*) into vNotasDia from notas_fiscais where DATA_VENDA = vDataAtual;
+		    set vQtdNotas = vQtdNotas + vNotasDia;
+		    select ADDDATE(vDataAtual, INTERVAL 1 DAY) into vDataAtual;
+		  end while;
+		  select vQtdNotas as Quantidade;
+		END
+		--
+		CREATE PROCEDURE `Soma_Dias_Notas`()
+		BEGIN
+		  DECLARE DATAINICIAL DATE;
+		  DECLARE DATAFINAL DATE;
+		  DECLARE NUMNOTAS INT;
+		  SET DATAINICIAL = '20170101';
+		  SET DATAFINAL = '20170110';
+		  WHILE DATAINICIAL <= DATAFINAL
+		  DO
+		    SELECT COUNT(*) INTO NUMNOTAS  FROM notas_fiscais WHERE DATA_VENDA = DATAINICIAL;
+		    SELECT concat(DATE_FORMAT(DATAINICIAL, '%d/%m/%Y'), '-' , CAST(NUMNOTAS as CHAR(50)));
+		    SELECT ADDDATE(DATAINICIAL, INTERVAL 1 DAY) INTO DATAINICIAL;
+		  END WHILE;
+		END
+		-- Imprime a quantidade diária com o texto formatado.
+		
+  .Uso de CURSOR:
+  	Cursor é uma estrutura do MySQL é uma variável que funciona como um array, onde podemos usar um select que retorne mais de uma linha e jogar esse resultado para o cursor.
+  	
+  	Obs: Cursor pode guardar mais de uma coluna em sua estrutura interna.
+  	
+  	Obs: Ao utilizar o SELECT INTO, devemos garantir que o select retorne apenas uma linha, o mysql não tem a capacidade de converter automaticamente um array em uma variável. (Erro 1172)

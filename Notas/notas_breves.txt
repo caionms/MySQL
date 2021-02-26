@@ -3,3 +3,14 @@ PONTOS A SE LEMBRAR SEMPRE -
 .Para alterar um valor de um campo em uma tabela não se usa alter table, mas sim UPDATE.
 
 .Para tratar um erro - declare exit handler for 1062 / BEGIN / ... / END
+	..Os tipos de handler são:
+		...CONTINUE :  the execution of the enclosing code block ( BEGIN … END ) continues.
+		...EXIT : the execution of the enclosing code block, where the handler is declared, terminates. This is true even if the condition occurs in an inner block.
+		...UNDO: Not supported.
+		
+.Quando usa INTO em um select para transformar uma consulta em uma variável, o select não vai imprimir nada.
+	Ex: 'select count(*) from notas_fiscais where DATA_VENDA = vDataAtual;' irá imprimir a quantidade de notas na data escolhida, enquanto que 'select count(*) into vNotasDia from notas_fiscais where DATA_VENDA = vDataAtual;' irá registrar a quantidade na variável vNotasDia.
+	
+.No CASE condicional declaramos apenas CASE 'case when vPreco >= 12.0', pois a variável a ser testada já está no when, enquanto que no CASE normal 'case vSabor when 'Lima/Limão'', pois iremos testar a variável para os casos do when.
+	
+

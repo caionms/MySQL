@@ -1,0 +1,6 @@
+SELECT SUM(B.QUANTIDADE * B.PRECO) AS TOTAL_VENDA FROM 
+notas_fiscais A INNER JOIN itens_notas_fiscais B
+ON A.NUMERO = B.NUMERO
+WHERE A.DATA_VENDA = '20170301';
+
+call Comparativo_Vendas('20170201','20170301');
