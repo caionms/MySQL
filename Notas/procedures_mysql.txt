@@ -444,8 +444,180 @@ PROCEDURES - É uma espécie de programa que irá executar certa ação recebend
 		-- Imprime a quantidade diária com o texto formatado.
 		
   .Uso de CURSOR:
-  	Cursor é uma estrutura do MySQL é uma variável que funciona como um array, onde podemos usar um select que retorne mais de uma linha e jogar esse resultado para o cursor.
+  	Cursor é uma estrutura do MySQL é uma variável que funciona como um array, onde podemos usar um select que retorne mais de uma linha e jogar esse resultado para o cursor, essa estrutura irá permitir uma interatividade linha a linha através de uma determinada ordem.
   	
   	Obs: Cursor pode guardar mais de uma coluna em sua estrutura interna.
   	
   	Obs: Ao utilizar o SELECT INTO, devemos garantir que o select retorne apenas uma linha, o mysql não tem a capacidade de converter automaticamente um array em uma variável. (Erro 1172)
+  	
+  	..Fases para o uso do CURSOR:
+  		Declaração - É definido qual consulta SQL estará sendo carregada ao CURSOR.
+  		Abertura - É aberto o CURSOR para percorrê-lo linha a linha.
+  		Percorrimento - É percorrido linha a linha até o seu final.
+  		Fechamento - Fecha o CURSOR.
+  		Limpa - É limpado o CURSOR da memória.
+  	
+  	Ex: CREATE PROCEDURE `primeiro_cursor` ()
+  	BEGIN
+  	  declare vNome varchar(50);
+  	  declare cNome cursor for select NOME from tabela_de_clientes limit 4;
+  	  open cNome;
+  	    fetch cNome into vNome; --lê a posição do cursor e registra na variável e passa a posição pro próximo
+  	    select vNome;
+  	    fetch cNome into vNome;
+  	    select vNome;
+  	    fetch cNome into vNome;
+  	    select vNome;
+  	    fetch cNome into vNome;
+  	    select vNome;
+  	  close cNome;
+  	END
+  	  
+  	  ..Usando looping com cursor:
+  	  	É preciso criar uma variável de controle para saber se o CURSOR ainda tem elementos, 0 ou 1, caso seja 0 o CURSOR não está no fim, caso seja 1 o CURSOR chegou ao fim. Assim teremos um error handler(for not found), para caso tente imprimir uma posição vazia do cursor, ele muda a variável pra 1.
+  	  	
+  	  	Obs: Usamos o handler para erro not found, porque quando damos um fetch em uma posição que não existe no cursor, o erro resultante é um not found.
+  	  	
+  	  	CREATE PROCEDURE `cursor_looping` ()
+		BEGIN
+		  declare vFimDoCursor int default 0;
+		  declare vNome varchar(50);
+		  declare cNome cursor for select NOME from tabela_de_clientes limit 4;
+		  declare continue handler for not found set vFimDoCursor = 1;
+		  open cNome;
+		    while vFimDoCursor = 0 do
+		      fetch cNome into vNome;
+		      select vNome as Nome;
+		    end while;
+		  close cNome;
+		END
+
+  	  	Obs: Nesse caso o último nome é selecionado duas vezes, pois quando for acessar uma posição vazia do cursor, ele vai entrar no while vai tentar dar fetch e não vai conseguir, vai dar erro e vai chamar o handler, que vai mudar a variável pra 1, porém ainda no while ele continua selecionando o nome, a seguir terá a solução minha:
+  	  		CREATE DEFINER=`root`@`localhost` PROCEDURE `cursor_looping_minha_solucao`()
+			BEGIN
+			  declare vFimDoCursor int default 0;
+			  declare vNome varchar(50);
+			  declare cNome cursor for select NOME from tabela_de_clientes limit 4;
+			  declare continue handler for not found set vFimDoCursor = 1;
+			  open cNome;
+			    while vFimDoCursor = 0 do
+			      fetch cNome into vNome;
+			      if vFimDoCursor = 0 then select vNome as Nome;
+			      end if;
+			    end while;
+			  close cNome;
+			END
+  	
+  		Exercício: Crie uma Stored Procedure usando um cursor para achar o valor total de todos os créditos de todos os clientes. Chame esta SP de Limite_Creditos - (Fiz uma que imprime o valor de cada cliente e imprime também a soma total)
+  			CREATE DEFINER=`root`@`localhost` PROCEDURE `Limite_Creditos`()
+  			BEGIN
+  			  declare vFimDoCursor int default 0;
+  			  declare vLimiteCliente float;
+  			  declare vLimiteTotal float;
+  			  declare cLimite cursor for select LIMITE_DE_CREDITO from tabela_de_clientes;
+  			  declare continue handler for not found set vFimDoCursor = 1;
+  			  set vLimiteTotal = 0.0;
+  			  open cLimite;
+  			    while vFimDoCursor = 0 do
+  			      fetch cLimite into vLimiteCliente;
+  			      if vFimDoCursor = 0 then
+  			        set vLimiteTotal = vLimiteTotal + vLimiteCliente;
+  			        select vLimiteCliente as Limite;
+  			      end if;
+  			    end while;
+  			  close cLimite;
+  			  select vLimiteTotal as `Limite Total`;
+			END
+  		
+  		Obs: O erro handler deve estar declarado depois da declaração do cursor.
+  		
+  	..Acessando vários campos com um cursor:
+		Para poder receber vários campos de um registro é necessário criar uma variável pra cada campo.
+		
+		CREATE DEFINER=`root`@`localhost` PROCEDURE `cursor_looping_campos`()
+		BEGIN
+		  declare vFimDoCursor int default 0;
+		  declare vCidade, vEstado, vCEP varchar(50);
+		  declare vNome, vEndereco varchar(150);
+		  declare cInfo cursor for select NOME, ENDERECO_1, CIDADE, ESTADO, CEP from tabela_de_clientes;
+		  declare continue handler for not found set vFimDoCursor = 1;
+		  open cInfo;
+		    while vFimDoCursor = 0 do
+		      fetch cInfo into vNome, vEndereco, vCidade, vEstado, vCEP;
+		      if vFimDoCursor = 0 then 
+		        select concat('Nome: ', vNome, ', Endereco: ', vEndereco, ', ', vCidade, '-', vEstado, ', CEP:', vCEP) as `Informação`;
+		        select vNome as Nome, vEndereco as `Endereço`, vCidade as Cidade, vEstado as Estado, vCEP as CEP;
+		      end if;
+		    end while;
+		  close cInfo;
+		END
+		
+		
+		Exercício:
+			CREATE DEFINER=`root`@`localhost` PROCEDURE `faturamento_mes_ano`(vMes int, vAno year)
+			BEGIN
+			  declare vFimDoCursor int default 0;
+			  declare vFaturamento float default 0;
+			  declare vFaturamentoTotal float default 0;
+			  declare cInfos cursor for select sum(A.QUANTIDADE * A.PRECO) as Faturamento from itens_notas_fiscais A
+			    inner join notas_fiscais B on A.NUMERO = B.NUMERO
+			    where month(B.DATA_VENDA) = vMes and year (B.DATA_VENDA) = vAno
+			    group by Data_Venda;
+			  declare continue handler for not found set vFimDoCursor = 1;
+			  open cInfos;
+			    while vFimDoCursor = 0 do
+			      fetch cInfos into vFaturamento;
+			      if vFimDoCursor = 0 then
+			        set vFaturamentoTotal = vFaturamento + vFaturamentoTotal;
+			      end if;
+			    end while;
+			  close cInfos;
+			  select vMes as `Mês`, vAno as Ano, vFaturamentoTotal as Faturamento;
+			END
+			
+			CREATE DEFINER=`root`@`localhost` PROCEDURE `faturamento_mes_ano_prof`()
+			
+		Obs: Na hora de fazer o FETCH as variáveis precisam estar na mesma ordem que o select na declaração do CURSOR.
+		
+  .FUNÇÃO: 
+  	Diferente de sub-rotinas (STORED PROCEDURES) que são uma série de comandos padronizados para serem utilizados, mas que não tem como objetivo necessariamente retornar algo. Uma função são comandos que vão ser executados com o objetivo de retornar um valor, sendo ele por exemplo para ser usado dentro de uma sub-rotina.
+  	
+  	..Fórmula de uma função:
+  		CREATE FUNCTION nome_funcao (parametros) RETURNS datatype;
+  		BEGIN
+  		DECLARE declaracao;
+  		...
+  		execucao
+  		...
+  		RETURN resultado;
+  		...
+  		END;
+  		
+  	..Criação de uma função:
+  		Botão direito em Functions -> Create Function... -> Preencher com os comandos.
+  	
+  	..Exemplo de Função:
+  		CREATE FUNCTION `f_acha_tipo_sabor` (vSabor varchar(50))
+  		RETURNS varchar(20)
+  		BEGIN
+  		  declare vRetorno varchar(20) default ''; -- default palavra vazia
+  		  case vSabor
+  		    when 'Lima/Limão' then set vRetorno = 'Cítrico';
+  		    when 'Laranja' then set vRetorno = 'Cítrico';
+  		    when 'Morango/Limão' then set vRetorno = 'Cítrico';
+  		    when 'Uva' then set vRetorno = 'Neutro';
+  		    when 'Morango' then set vRetorno = 'Neutro';
+  		    else set vRetorno = 'Ácido';
+  		  end case;
+  		  RETURN vRetorno;
+  		END
+  	
+  	..Meios de chamar uma função: (usando a função do exemplo acima)
+  		select f_acha_tipo_sabor ('Laranja');
+  		select NOME_DO_PRODUTO, SABOR, f_acha_tipo_sabor (SABOR) as TIPO from tabela_de_produtos;
+  		select NOME_DO_PRODUTO, SABOR from tabela_de_produtos where f_acha_tipo_sabor (SABOR) = 'Neutro';
+  		
+  	Obs: Da mesma forma que podemos usar o CONCAT em um select (Ex: select concat (NOME_DO_PRODUTO, ' ', SABOR) from tabela_de_produtos;) podemos usar uma função que criamos, ambas tem a mesma funcionalidade, porém uma é natural do sistema e outra foi criada por nós. 
+  	
+  	Obs: Normalmente o ambiente mysql não permite a criação de função, para isso mudar >
+  		SET GLOBAL log_bin_trust_function_creators = 1;
