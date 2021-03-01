@@ -14,3 +14,7 @@ PONTOS A SE LEMBRAR SEMPRE -
 .No CASE condicional declaramos apenas CASE 'case when vPreco >= 12.0', pois a variável a ser testada já está no when, enquanto que no CASE normal 'case vSabor when 'Lima/Limão'', pois iremos testar a variável para os casos do when.
 	
 .GROUP BY vem sempre por último na consulta.
+
+.IF usa THEN, WHILE usa DO, ambas terminam com END.
+
+.Cursor usa OPEN e termina com CLOSE;

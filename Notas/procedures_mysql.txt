@@ -621,3 +621,117 @@ PROCEDURES - É uma espécie de programa que irá executar certa ação recebend
   	
   	Obs: Normalmente o ambiente mysql não permite a criação de função, para isso mudar >
   		SET GLOBAL log_bin_trust_function_creators = 1;
+  		
+  .Problemas práticos - Criação de uma venda fictícia na base de dados da empresa de suco de frutas, vai funcionar da seguinte forma:
+  	1.Iremos passar 3 parâmetros nessa stored procedure, uma data (data fictícia que ocorreu a venda), o número máximo de itens da nota fiscal e para cada item comprado a quantidade máxima de produtos que podem ser comprados.
+  	2.Dado esses 3 parâmetros, a stored procedure vai na tabela de clientes e vai buscar um CPF e uma matrícula de forma aleatória, tendo o CPF, a matrícula e a data vai ser formado o cabeçalho da nota fiscal.
+  	3.Depois ela vai achar um número de itens de forma aleatória entre 1 e o número máximo de itens, e dependendo do número de itens, ela vai buscar códigos de produtos e os preços de lista desses produtos.
+  	4.Para cada item, ele vai pegar uma quantidade, de forma aleatória, baseado no número máximo de quantidade que pode ser comprado nessa venda fictícia. (passado como parâmetro)
+  	5.Por fim, ela vai formar uma nota fiscal com cabeçalho e vários itens, e vai colocar isso nas tabelas como um novo registro.
+  		
+  	Obs: Para achar um número aleatório, usamos a função rand(). Dessa forma para selecionarmos um registro aleatório, sorteamos um número e pegamos o registro na posição correspodente a aquele número - 
+  		select rand();
+  		
+  	Obs: Para fazer o controle do número, utilizamos a fórmula (ALEATORIO() * (MAX-MIN+1)) + MIN:
+  		select (rand() * (300-15+1))+15; -- MIN = 15 / MAX = 300
+  			
+  	Obs: Como queremos uma posição a partir do RAND e ela resulta em um float, iremos aplicar a função floor que pega apenas a parte inteira do número - 
+  		select floor((rand() * (300-15+1))+15); -- MIN = 15 / MAX = 300
+  	
+  	..Resolução do problema:
+  		1. Iremos criar a função que vai receber os parâmetros de MIN e MAX, retornando um valor aleatório:
+  			CREATE FUNCTION `f_numero_aleatorio` (vMin int, vMax int)
+  			RETURNS INTEGER
+  			BEGIN
+  			  declare vRetorno int;
+  			  select floor((rand() * (vMax-vMin+1))+vMin) into vRetorno; 
+  			  RETURN vRetorno;
+  			END
+  			
+  			Obs: Caso dê erro de não ser uma função determinística na criação, usar - 
+  				SET GLOBAL log_bin_trust_function_creators = 1;
+  			     Uma função determinística é quando essa ao receber os mesmos parâmetros vai sempre gerar o mesmo resultado, no nosso caso por ser um valor aleatório, ele não gera o mesmo resultado mesmo recebendo os mesmo parâmetros. 
+  			     
+  		2. Iremos criar a função que vai buscar um cliente aleatório (vai retornar o cpf que é primary key):
+  			CREATE DEFINER=`root`@`localhost` FUNCTION `f_cliente_aleatorio`() RETURNS varchar(11) CHARSET utf8mb4
+  			BEGIN
+  			  declare vRetorno varchar(11);
+  			  declare vTamanhoTabela int;
+  			  declare vNumeroAleatorio int;
+  			  select count(*) into vTamanhoTabela from tabela_de_clientes;
+  			  set vNumeroAleatorio = f_numero_aleatorio(1,vTamanhoTabela);
+  			  set vNumeroAleatorio = vNumeroAleatorio - 1;	
+  			  -- ajuste do parametro, pois o tamanho maximo da tabela + 1 do limit vai dar maior que a tabela 
+  			  -- e 1 (menor numero) + 1 do limit vai dar 2, então não pega o primeiro elemento; 
+  			  select CPF into vRetorno from tabela_de_clientes limit vNumeroAleatorio,1;
+  			  RETURN vRetorno;
+  			END
+  			
+  			--PODEMOS FAZER O AJUSTO DO PARAMETRO TAMBÉM:
+  			CREATE DEFINER=`root`@`localhost` FUNCTION `f_cliente_aleatorio`() RETURNS varchar(11) CHARSET utf8mb4
+  			BEGIN
+  			  declare vRetorno varchar(11);
+  			  declare vTamanhoTabela int;
+  			  declare vNumeroAleatorio int;
+  			  select count(*) into vTamanhoTabela from tabela_de_clientes;
+  			  set vNumeroAleatorio = f_numero_aleatorio(0,vTamanhoTabela-1);
+  			  select CPF into vRetorno from tabela_de_clientes limit vNumeroAleatorio,1;
+  			  RETURN vRetorno;
+  			END	
+  			     
+  			     Obs: A função LIMIT vai nos ajudar a selecionar o cliente da posição aleatória, ao chamar a função LIMIT e passando além do parâmetro limitador, podemos passar outro parâmetro, dessa forma limitando a consulta a partir de X posição pegando Y registros (SELECT * FROM tabela LIMIT X,Y;), irá pegar o registro da posição X até a Y, no nosso caso, o Y será igual a 1, então pegaremos o próximo elemento depois do X, por exemplo para pegar o 6 elemento (SELECT * FROM tabela LIMIT 5,1;).
+  			     
+  .Exercícios da última parte:
+  	..Crie uma tabela chamada TABELA_ALEATORIOS. Faça uma SP (Chame-a de Tabela_Numeros) que use um loop para gravar nesta tabela 100 números aleatórios entre 0 e 1000. Depois liste numa consulta esta tabela.
+  		CREATE DEFINER=`root`@`localhost` PROCEDURE `preencher_tabela_numeros`()
+  		BEGIN
+  		  declare vContador int default 0;
+  		  delete from tabela_numeros;
+  		  while vContador < 100 do
+  		    if vContador < 100 then
+  		      insert into tabela_numeros values (f_numero_aleatorio(0,1000));
+  		      set vContador = vContador + 1;
+  		    end if;
+  		  end while;
+  		  select * from tabela_numeros;
+  		END
+  		
+  		-- OUTRA SOLUÇÃO SERIA:
+  		CREATE DEFINER=`root`@`localhost` PROCEDURE `preencher_tabela_numeros`()
+  		BEGIN
+  		  declare vContador int default 1;
+  		  delete from tabela_numeros;
+  		  while vContador <= 100 do
+  		    insert into tabela_numeros values (f_numero_aleatorio(0,1000));
+  		    set vContador = vContador + 1;
+  		  end while;
+  		  select * from tabela_numeros;
+  		END
+  		
+  	..Neste exercício crie outra função para obter o produto também usando a função aleatório:
+  		CREATE FUNCTION `f_produto_aleatorio` ()
+  		RETURNS varchar(10)
+  		BEGIN
+  		  declare vRetorno varchar(10);
+  		  declare vTamanhoTabela int;
+  		  declare vNumeroAleatorio int;
+  		  select count(*) into vTamanhoTabela from tabela_de_produtos;
+  		  set vNumeroAleatorio = f_numero_aleatorio(0,vTamanhoTabela-1);
+  		  select CODIGO_DO_PRODUTO into vRetorno from tabela_de_produtos limit vNumeroAleatorio,1;
+  		  RETURN vRetorno;
+  		END
+  		
+  	..Neste exercício crie outra função para obter o vendedor também usando a função aleatório:
+  		CREATE FUNCTION `f_vendedor_aleatorio` ()
+  		RETURNS varchar(5)
+  		BEGIN
+  		  declare vRetorno varchar(5);
+  		  declare vTamanhoTabela int;
+  		  declare vNumeroAleatorio int;
+  		  select count(*) into vTamanhoTabela from tabela_de_vendedores;
+  		  set vNumeroAleatorio = f_numero_aleatorio(0,vTamanhoTabela-1);
+  		  select MATRICULA into vRetorno from tabela_de_vendedores limit vNumeroAleatorio,1;
+  		  RETURN vRetorno;
+  		END
+
+	
