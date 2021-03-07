@@ -1,0 +1,23 @@
+create table tab_faturamento (DATA_VENDA date null, TOTAL_VENDA float);
+
+drop trigger TG_CALCULA_FATURAMENTO_INSERT;
+drop trigger TG_CALCULA_FATURAMENTO_UPDATE;
+drop trigger TG_CALCULA_FATURAMENTO_DELETE;
+
+DELIMITER //
+CREATE TRIGGER TG_CALCULA_FATURAMENTO_INSERT AFTER INSERT ON itens_notas_fiscais
+FOR EACH ROW BEGIN
+  call sp_calculo_faturamento();
+END//
+
+DELIMITER //
+CREATE TRIGGER TG_CALCULA_FATURAMENTO_UPDATE AFTER UPDATE ON itens_notas_fiscais
+FOR EACH ROW BEGIN
+  call sp_calculo_faturamento();
+END//
+
+DELIMITER //
+CREATE TRIGGER TG_CALCULA_FATURAMENTO_DELETE AFTER DELETE ON itens_notas_fiscais
+FOR EACH ROW BEGIN
+  call sp_calculo_faturamento();
+END//

@@ -22,3 +22,5 @@ PONTOS A SE LEMBRAR SEMPRE -
 .Para apagar uma STORED PROCEDURE se usa DROP.
 
 .DELETE se usa para apagar registros da tabela.
+
+.Para consultar um registro por posição na tabela, utilizamos o LIMIT, da seguinte forma: LIMIT numero_posicao, 1;

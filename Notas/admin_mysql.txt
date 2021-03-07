@@ -1,0 +1,10 @@
+Administrando no MySQL - 
+  .O profissional responsável por administrar o banco de dados(DBA) tem como responsabilidades:
+  	-Avaliar e instalar o ambiente MySQL.
+  	-Configurar o acesso a base de dados.
+  	-Manter o banco de dados com perfomance.
+  	-Manter os dados através de processos de backup.
+  	-Auxiliar a área de desenvolvimento na manuntenção dos dados.
+  	-Monitorar a instalação do MySQL.
+  	-Configuração do ambiente.
+  	-Administrar o acesso de usuários.
