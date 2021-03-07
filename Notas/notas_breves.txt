@@ -15,6 +15,10 @@ PONTOS A SE LEMBRAR SEMPRE -
 	
 .GROUP BY vem sempre por último na consulta.
 
-.IF usa THEN, WHILE usa DO, ambas terminam com END.
+.IF usa THEN, WHILE usa DO, CASE usa WHEN, todas terminam com END.
 
-.Cursor usa OPEN e termina com CLOSE;
+.Cursor usa OPEN e termina com CLOSE.
+
+.Para apagar uma STORED PROCEDURE se usa DROP.
+
+.DELETE se usa para apagar registros da tabela.

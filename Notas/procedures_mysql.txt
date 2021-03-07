@@ -118,7 +118,7 @@ PROCEDURES - É uma espécie de programa que irá executar certa ação recebend
   		Obs: Para apagar uma procedure por linha de comando - 
   			DROP procedure IF EXISTS `teste`;
   			
-  .Inserindo valores com VARIÁVEIS atrabés de STORED PROCEDURES:
+  .Inserindo valores com VARIÁVEIS através de STORED PROCEDURES:
   	DECLARE vCodigo varchar(50) DEFAULT '3000001';
   	DECLARE vNome varchar(50) DEFAULT 'Sabor do Mar 700 ml - Manga';
   	DECLARE vSabor varchar(50) DEFAULT 'Manga';
@@ -361,7 +361,7 @@ PROCEDURES - É uma espécie de programa que irá executar certa ação recebend
 		  declare vPreco float;
 		  declare vResultado varchar(50);
 		  select PRECO_DE_LISTA into vPreco from tabela_de_produtos where CODIGO_DO_PRODUTO = vProduto;
-		  case (*)
+		  case -- (*)
 		    when vPreco >= 12.0 then set vResultado = 'Produto caro';
 		    when vPreco < 12.00 and vPreco >= 7.00 then set vResultado = 'Produto em conta';
 		    else set vResultado = 'Produto barato';
@@ -553,7 +553,7 @@ PROCEDURES - É uma espécie de programa que irá executar certa ação recebend
 		END
 		
 		
-		Exercício:
+		Exercício: Crie uma Stored Procedure usando um cursor para achar o valor total do faturamento para um mês e um ano - 
 			CREATE DEFINER=`root`@`localhost` PROCEDURE `faturamento_mes_ano`(vMes int, vAno year)
 			BEGIN
 			  declare vFimDoCursor int default 0;
@@ -681,8 +681,88 @@ PROCEDURES - É uma espécie de programa que irá executar certa ação recebend
   			     
   			     Obs: A função LIMIT vai nos ajudar a selecionar o cliente da posição aleatória, ao chamar a função LIMIT e passando além do parâmetro limitador, podemos passar outro parâmetro, dessa forma limitando a consulta a partir de X posição pegando Y registros (SELECT * FROM tabela LIMIT X,Y;), irá pegar o registro da posição X até a Y, no nosso caso, o Y será igual a 1, então pegaremos o próximo elemento depois do X, por exemplo para pegar o 6 elemento (SELECT * FROM tabela LIMIT 5,1;).
   			     
+  		3. Criando a Stored Procedure que vai inserir a nova venda criada:
+  			CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_inserir_venda`(vData date, vMaxItens int, vMaxQtd int)
+  			BEGIN
+  			  declare vCliente varchar(11); -- cpf aleatorio
+  			  declare vVendedor varchar(5); -- matricula aleatoria
+  			  declare vProduto varchar(10); -- codigo do produto aleatorio
+  			  declare vQtdItem int; -- quantidade de itens
+  			  declare vPrecoItem float; -- preco de um item
+  			  declare vNumItens int; -- numeros de itens da nota fiscal
+  			  declare vNumeroNota int; -- numero da nota fiscal (numero sequencial)
+  			  declare vContador int default 0; -- contador para o while que vai adicionar os itens
+  			  set vCliente = f_cliente_aleatorio(); -- cpf escolhido aleatorio da tabela de cliente
+  			  set vVendedor = f_vendedor_aleatorio(); -- matricula escolhida aleatorio da tabela de vendedor
+  			  select max(numero)+1 into vNumeroNota from notas_fiscais; -- numero da ultima nota + 1
+  			  insert into notas_fiscais (CPF, MATRICULA, DATA_VENDA, NUMERO, IMPOSTO) -- cria uma nota fiscal
+  			  values (vCliente, vVendedor, vData, vNumeroNota, 0.11); -- por enquanto o imposto é padrao
+  			  set vNumItens = f_numero_aleatorio(1,vMaxItens); -- quantidade aleatória de itens
+  			  while vContador < vNumItens do -- cria um item de nota fiscal para cada loop
+  			    set vProduto = f_produto_aleatorio(); -- escolhe um codigo de produto aleatorio da tabela de produto
+  			    set vQtdItem = f_numero_aleatorio(1, vMaxQtd); -- quantidade aleatoria de produto do item
+  			    select PRECO_DE_LISTA into vPrecoItem from tabela_de_produtos where CODIGO_DO_PRODUTO = vProduto;
+  			    insert into itens_notas_fiscais (NUMERO, CODIGO_DO_PRODUTO, QUANTIDADE, PRECO) -- cria um item de nota fiscal
+  			    values (vNumeroNota, vProduto, vQtdItem, vPrecoItem);
+  			    set vContador = vContador + 1; -- soma no contador
+  			  end while;
+  			END
+  			
+  			Obs: Para achar o último número de nota fiscal, usamos:
+  				Select Max(numero)+1 into vNumeroNota from notas_fiscais;
+  			     Como o número de notas é sequencial então pegando o maior número, que também é o último, e somando 1, temos o próximo número na sequência.
+  			     
+  		4. A cada interação no loop é pego um produto(item) de forma aleatória para uma mesma nota fiscal, porém não podemos ter em uma mesma nota fiscal 2 itens diferentes do mesmo produto, porque na teoria cada produto ele vai ter sua quantidade definida no campo QUANTIDADE, logo codigo_do_produto em itens_notas_fiscais é uma PRIMARY KEY. Para resolver esse problema iremos criar uma variável de controle para saber quantos itens já existem em um nota fiscal de um determinado produto, caso não existe nenhum item com aquele produto, podemos adicionar ele como item da nota fiscal:
+  			CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_inserir_venda`(vData date, vMaxItens int, vMaxQtd int)
+  			BEGIN
+  			  declare vCliente varchar(11); -- cpf aleatorio
+  			  declare vVendedor varchar(5); -- matricula aleatoria
+  			  declare vProduto varchar(10); -- codigo do produto aleatorio
+  			  declare vQtdItem int; -- quantidade de itens
+  			  declare vPrecoItem float; -- preco de um item
+  			  declare vNumItens int; -- numeros de itens da nota fiscal
+  			  declare vNumeroNota int; -- numero da nota fiscal (numero sequencial)
+  			  declare vContador int default 0; -- contador para o while que vai adicionar os itens]
+  			  declare vTesteItemNota int default 0; -- variavel de controle para saber se um item ja existe na nota 
+  			  set vCliente = f_cliente_aleatorio(); -- cpf escolhido aleatorio da tabela de cliente
+  			  set vVendedor = f_vendedor_aleatorio(); -- matricula escolhida aleatorio da tabela de vendedor
+  			  select max(numero)+1 into vNumeroNota from notas_fiscais; -- numero da ultima nota + 1
+  			  insert into notas_fiscais (CPF, MATRICULA, DATA_VENDA, NUMERO, IMPOSTO) -- cria uma nota fiscal
+  			  values (vCliente, vVendedor, vData, vNumeroNota, 0.11); -- por enquanto o imposto é padrao
+  			  set vNumItens = f_numero_aleatorio(1,vMaxItens); -- quantidade aleatória de itens
+  			  while vContador < vNumItens do -- cria um item de nota fiscal para cada loop
+  			    set vProduto = f_produto_aleatorio(); -- escolhe um codigo de produto aleatorio da tabela de produto
+  			    select count(*) into vTesteItemNota from itens_notas_fiscais where CODIGO_DO_PRODUTO = vProduto and NUMERO = vNumeroNota;  
+  		  	    if vTesteItemNota = 0 then
+  			      set vQtdItem = f_numero_aleatorio(1, vMaxQtd); -- quantidade aleatoria de produto do item
+  			      select PRECO_DE_LISTA into vPrecoItem from tabela_de_produtos where CODIGO_DO_PRODUTO = vProduto;
+  			      insert into itens_notas_fiscais (NUMERO, CODIGO_DO_PRODUTO, QUANTIDADE, PRECO)
+  			      values (vNumeroNota, vProduto, vQtdItem, vPrecoItem);
+  			      set vContador = vContador + 1;
+  			    end if;
+  			  end while;
+  			END
+  			
+  		Obs: Para testar o funcionamento da inserção, podemos usar:
+  			select MAX(NUMERO) from notas_fiscais;
+  			select * from notas_fiscais where NUMERO = f_ultima_nota();
+  			select * from itens_notas_fiscais where NUMERO = f_ultima_nota();
+  			call sp_inserir_venda('2021-03-07', 3, 100);
+  			select * from notas_fiscais where NUMERO = f_ultima_nota();
+  			select * from itens_notas_fiscais where NUMERO = f_ultima_nota();
+  			
+  			-- Função para achar a última nota:
+  				CREATE DEFINER=`root`@`localhost` FUNCTION `f_ultima_nota`() RETURNS int
+  				BEGIN
+  				  declare vNumero int;
+  				  select MAX(NUMERO) into vNumero from notas_fiscais;
+  				  RETURN vNumero;
+  				END
+  			     
   .Exercícios da última parte:
   	..Crie uma tabela chamada TABELA_ALEATORIOS. Faça uma SP (Chame-a de Tabela_Numeros) que use um loop para gravar nesta tabela 100 números aleatórios entre 0 e 1000. Depois liste numa consulta esta tabela.
+  		create table tabela_numeros (NUMERO int);
+  		--
   		CREATE DEFINER=`root`@`localhost` PROCEDURE `preencher_tabela_numeros`()
   		BEGIN
   		  declare vContador int default 0;
@@ -734,4 +814,38 @@ PROCEDURES - É uma espécie de programa que irá executar certa ação recebend
   		  RETURN vRetorno;
   		END
 
-	
+  .Melhorando Triggers:
+  	Como foi visto no curso de DML, não podemos criar TRIGGERs que irão fazer INSERT, UPDATE e DELETE na mesma TRIGGER, precisamos fazer 3 diferentes que irão fazer a menuntenção em conjunto. Por exemplo, temos feito as TRIGGERs que calculam o faturamento da empresa, onde a de INSERT recalcula o faturamento quando é inserido um item novo na tabela de itens. a de UPDATE quando ocorre uma atualização em algum dos itens e a de DELETE quando um item é removido da tabela. Podemos então fazer uma STORED PROCEDURE que irá ser chamada nos 3 casos, dessa forma ao uma TRIGGER ser ativada ela irá chamar a STORED PROCEDURE com as operações e ao ter que modificar uma TRIGGER, invés de modificar o mesmo código para cada um dos 3 casos, iremos modificar a STORED PROCEDURE - 	
+  		-- STORED PROCEDURE
+  			CREATE PROCEDURE `sp_calculo_faturamento` ()
+  			BEGIN
+  			  DELETE FROM tab_faturamento;
+  			  INSERT INTO tab_faturamento
+  			  SELECT A.DATA_VENDA, SUM(B.QUANTIDADE * B.PRECO) AS TOTAL_VENDA FROM
+  			  notas_fiscais A INNER JOIN itens_notas_fiscais B
+  			  ON A.NUMERO = B.NUMERO
+  			  GROUP BY A.DATA_VENDA;
+  			END
+  			
+  		-- TRIGGER DE INSERT
+  			DELIMITER //
+			  CREATE TRIGGER TG_CALCULA_FATURAMENTO_INSERT AFTER INSERT ON itens_notas_fiscais
+			  FOR EACH ROW BEGIN
+			    call sp_calculo_faturamento();
+			  END//
+			  
+		-- TRIGGER DE UPDATE
+			DELIMITER //
+			  CREATE TRIGGER TG_CALCULA_FATURAMENTO_UPDATE AFTER UPDATE ON itens_notas_fiscais
+			  FOR EACH ROW BEGIN
+			    call sp_calculo_faturamento();
+			  END//
+			  
+		-- TRIGGER DE DELETE	
+			DELIMITER //
+			  CREATE TRIGGER TG_CALCULA_FATURAMENTO_DELETE AFTER DELETE ON itens_notas_fiscais
+			  FOR EACH ROW BEGIN
+			    call sp_calculo_faturamento();
+			  END//
+  		
+  	Obs: Tais TRIGGERs estão na pasta de arquivos como "criando-triggers.sql".
